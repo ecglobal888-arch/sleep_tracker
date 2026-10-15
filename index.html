@@ -7,6 +7,85 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>每日睡眠與身體狀況紀錄</title>
+    <!-- 手機主畫面 App 全螢幕與狀態列設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="睡眠紀錄" />
+    <meta name="theme-color" content="#1e293b" />
+
+    <!-- 自動產生高畫質「夜空彎月」App 圖示與 PWA Manifest (免上傳圖片檔) -->
+    <script>
+      (function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext("2d");
+
+        // 1. 繪製深藍靜謐夜空背景
+        const grad = ctx.createLinearGradient(0, 0, 512, 512);
+        grad.addColorStop(0, "#1e293b");
+        grad.addColorStop(1, "#0f172a");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 512, 512, 115);
+        ctx.fill();
+
+        // 2. 繪製溫暖金黃色彎月
+        ctx.fillStyle = "#fbbf24";
+        ctx.beginPath();
+        ctx.arc(245, 256, 125, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 利用深色圓形切出新月形狀
+        ctx.fillStyle = "#152033";
+        ctx.beginPath();
+        ctx.arc(295, 220, 110, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. 繪製兩顆柔和星光點綴
+        ctx.fillStyle = "#fde68a";
+        ctx.beginPath();
+        ctx.arc(365, 145, 12, 0, Math.PI * 2);
+        ctx.arc(150, 140, 7, 0, Math.PI * 2);
+        ctx.arc(350, 360, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        const iconUrl = canvas.toDataURL("image/png");
+
+        // 掛載 Favicon 與 iOS/Android 桌面圖示
+        const addLink = (rel, href) => {
+          const link = document.createElement("link");
+          link.rel = rel;
+          link.href = href;
+          document.head.appendChild(link);
+        };
+        addLink("icon", iconUrl);
+        addLink("apple-touch-icon", iconUrl);
+
+        // 動態建立 PWA Manifest (讓 Android Chrome 支援全螢幕安裝與圖示)
+        const manifest = {
+          name: "每日睡眠與身體狀況紀錄",
+          short_name: "睡眠紀錄",
+          start_url: location.href,
+          display: "standalone",
+          background_color: "#0f172a",
+          theme_color: "#1e293b",
+          icons: [
+            {
+              src: iconUrl,
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+          ],
+        };
+        const blob = new Blob([JSON.stringify(manifest)], {
+          type: "application/manifest+json",
+        });
+        addLink("manifest", URL.createObjectURL(blob));
+      })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
