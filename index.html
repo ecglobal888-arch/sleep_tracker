@@ -1,0 +1,3910 @@
+<!doctype html>
+<html lang="zh-TW" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>每日睡眠與身體狀況紀錄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: "#f0f7ff",
+                100: "#e0effe",
+                500: "#3b82f6",
+                600: "#2563eb",
+                700: "#1d4ed8",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+      }
+      .table-container {
+        overflow-x: auto;
+        max-height: 68vh;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+      }
+      thead th.sticky-col {
+        z-index: 15;
+      }
+      input[type="range"] {
+        accent-color: #2563eb;
+      }
+      @media (max-width: 640px) {
+        .touch-btn {
+          min-height: 42px;
+          min-width: 42px;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col md:flex-row transition-colors duration-150"
+  >
+    <!-- 側邊/底部導覽列 -->
+    <aside
+      class="w-full md:w-60 bg-white dark:bg-slate-800 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex-shrink-0 flex flex-col justify-between z-20"
+    >
+      <div>
+        <div
+          class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between"
+        >
+          <div>
+            <h1
+              class="font-bold text-lg text-slate-900 dark:text-white tracking-tight"
+            >
+              睡眠與身體狀況紀錄
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              🔒 資料儲存在本機瀏覽器
+            </p>
+          </div>
+          <button
+            id="mobileMenuBtn"
+            class="md:hidden px-3 py-1.5 rounded border border-slate-300 dark:border-slate-600 text-sm font-medium"
+            onclick="App.toggleMobileNav()"
+          >
+            選單 ☰
+          </button>
+        </div>
+        <nav id="mainNav" class="hidden md:flex flex-col p-2 space-y-1">
+          <button
+            onclick="App.switchTab('records')"
+            data-tab="records"
+            class="nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
+          >
+            📝 每日紀錄
+          </button>
+          <button
+            onclick="App.switchTab('stats')"
+            data-tab="stats"
+            class="nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
+          >
+            📊 統計分析
+          </button>
+          <button
+            onclick="App.switchTab('calendar')"
+            data-tab="calendar"
+            class="nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
+          >
+            📅 日曆檢視
+          </button>
+          <button
+            onclick="App.switchTab('fields')"
+            data-tab="fields"
+            class="nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
+          >
+            🧩 自訂欄位
+          </button>
+          <button
+            onclick="App.switchTab('data')"
+            data-tab="data"
+            class="nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
+          >
+            💾 資料管理
+          </button>
+          <button
+            onclick="App.switchTab('settings')"
+            data-tab="settings"
+            class="nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
+          >
+            ⚙️ 設定
+          </button>
+        </nav>
+      </div>
+      <div
+        class="hidden md:block p-4 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 space-y-1"
+      >
+        <div id="sidebarStreak">🔥 連續紀錄：0 天</div>
+        <div id="sidebarMonthCount">📅 本月完整率：0%</div>
+        <div id="sidebarDemoBadge" class="hidden pt-2">
+          <span
+            class="inline-block bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 px-2 py-0.5 rounded text-xs font-medium"
+            >包含 Demo 資料</span
+          >
+          <button
+            onclick="App.clearDemoData()"
+            class="underline ml-1 text-amber-700 dark:text-amber-300"
+          >
+            一鍵清除
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主內容區 -->
+    <main class="flex-1 p-4 md:p-6 overflow-y-auto max-w-full">
+      <!-- 頂部通知與異常溫和提醒 -->
+      <div id="gentleAlerts" class="space-y-2 mb-4"></div>
+
+      <!-- 1. 首頁／每日紀錄 -->
+      <section id="tab-records" class="tab-content space-y-5">
+        <!-- 今日狀態與快速行動列 -->
+        <div
+          class="bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+        >
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span
+                class="text-sm font-medium text-slate-500 dark:text-slate-400"
+                id="todayHeaderDate"
+                >今天：----/--/--</span
+              >
+              <span
+                id="todayStatusBadge"
+                class="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                >檢查中</span
+              >
+            </div>
+            <div
+              id="todaySummaryText"
+              class="text-sm text-slate-700 dark:text-slate-300 pt-1"
+            ></div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button
+              id="btnPrimaryToday"
+              onclick="App.openTodayForm(false)"
+              class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm shadow-sm transition"
+            >
+              ＋新增今日紀錄
+            </button>
+            <button
+              onclick="App.openTodayForm(true)"
+              class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm shadow-sm transition"
+            >
+              ⚡ 30秒快速紀錄
+            </button>
+            <button
+              onclick="App.openRecordModal(null, false)"
+              class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg text-sm transition"
+            >
+              📅 補登其他日期
+            </button>
+          </div>
+        </div>
+
+        <!-- 快速統計卡片 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div
+            class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
+          >
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              連續紀錄 / 最長
+            </div>
+            <div class="text-lg font-bold mt-1" id="quickStatStreak">
+              0 天
+              <span class="text-xs font-normal text-slate-400">/ 0 天</span>
+            </div>
+          </div>
+          <div
+            class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
+          >
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              本週平均晨起 (1-10)
+            </div>
+            <div class="text-lg font-bold mt-1" id="quickStatWeekMorning">
+              --
+            </div>
+          </div>
+          <div
+            class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
+          >
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              本週平均睡前 (1-10)
+            </div>
+            <div class="text-lg font-bold mt-1" id="quickStatWeekBed">--</div>
+          </div>
+          <div
+            class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
+          >
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              本月紀錄完整度
+            </div>
+            <div class="text-lg font-bold mt-1" id="quickStatMonthRate">
+              0 / 30 (0%)
+            </div>
+          </div>
+        </div>
+
+        <!-- 搜尋、篩選、欄位顯示與排序工具列 -->
+        <div
+          class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 space-y-3"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label
+                class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+                >搜尋備註與自訂內容</label
+              >
+              <input
+                type="text"
+                id="filterKeyword"
+                oninput="App.applyFilters()"
+                placeholder="輸入關鍵字（如：頭痛、運動、咖啡）"
+                class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+                >日期範圍</label
+              >
+              <select
+                id="filterDateRange"
+                onchange="App.onDateRangeChange()"
+                class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+              >
+                <option value="all">全部日期</option>
+                <option value="today">今天</option>
+                <option value="7d">最近 7 天</option>
+                <option value="30d">最近 30 天</option>
+                <option value="90d">最近 90 天</option>
+                <option value="thisMonth">本月</option>
+                <option value="lastMonth">上個月</option>
+                <option value="thisYear">今年</option>
+                <option value="custom">自訂日期範圍...</option>
+              </select>
+            </div>
+            <div>
+              <label
+                class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+                >條件篩選</label
+              >
+              <select
+                id="filterCondition"
+                onchange="App.applyFilters()"
+                class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+              >
+                <option value="all">所有狀態</option>
+                <option value="q_好">睡眠品質 = 好</option>
+                <option value="q_普通">睡眠品質 = 普通</option>
+                <option value="q_差">睡眠品質 = 差</option>
+                <option value="q_很差">睡眠品質 = 很差</option>
+                <option value="m_le4">晨起分數 ≤ 4 (低分注意)</option>
+                <option value="m_ge8">晨起分數 ≥ 8 (狀態良好)</option>
+                <option value="b_le4">睡前分數 ≤ 4</option>
+                <option value="b_ge8">睡前分數 ≥ 8</option>
+              </select>
+            </div>
+            <div>
+              <label
+                class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+                >排序方式</label
+              >
+              <select
+                id="filterSort"
+                onchange="App.applyFilters()"
+                class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+              >
+                <option value="date_desc">日期：新 → 舊</option>
+                <option value="date_asc">日期：舊 → 新</option>
+                <option value="morning_desc">晨起分數：高 → 低</option>
+                <option value="morning_asc">晨起分數：低 → 高</option>
+                <option value="bed_desc">睡前分數：高 → 低</option>
+                <option value="bed_asc">睡前分數：低 → 高</option>
+                <option value="quality_desc">睡眠品質：好 → 很差</option>
+                <option value="quality_asc">睡眠品質：很差 → 好</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 自訂日期範圍選擇器 -->
+          <div
+            id="customDateRangeBox"
+            class="hidden flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700 text-sm"
+          >
+            <span>從</span>
+            <input
+              type="date"
+              id="filterStartDate"
+              onchange="App.applyFilters()"
+              class="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-600 bg-transparent"
+            />
+            <span>至</span>
+            <input
+              type="date"
+              id="filterEndDate"
+              onchange="App.applyFilters()"
+              class="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-600 bg-transparent"
+            />
+          </div>
+
+          <!-- 顯示欄位與檢視切換 -->
+          <div
+            class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-700"
+          >
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <button
+                  onclick="App.toggleColumnSelector()"
+                  class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  👁️ 顯示／隱藏欄位與欄寬
+                </button>
+                <div
+                  id="columnSelectorPopup"
+                  class="hidden absolute left-0 mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-3 z-30 space-y-2"
+                >
+                  <div class="text-xs font-bold text-slate-500 border-b pb-1">
+                    勾選要在表格顯示的欄位
+                  </div>
+                  <div
+                    id="columnCheckboxes"
+                    class="max-h-52 overflow-y-auto space-y-1.5 text-sm"
+                  ></div>
+                  <div class="border-t pt-2">
+                    <label class="block text-xs text-slate-500 mb-1"
+                      >備註欄寬度</label
+                    >
+                    <select
+                      id="noteColWidthSelect"
+                      onchange="App.changeNoteWidth(this.value)"
+                      class="w-full text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                    >
+                      <option value="220px">標準 (220px)</option>
+                      <option value="340px">寬版 (340px)</option>
+                      <option value="480px">超寬 (480px)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <button
+                onclick="App.resetFilters()"
+                class="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              >
+                重設篩選
+              </button>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span id="filteredCountLabel">共 0 筆紀錄</span>
+              <button
+                onclick="App.toggleMobileViewMode()"
+                id="btnViewModeToggle"
+                class="md:hidden px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+              >
+                切換卡片/表格
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 桌面與水平捲動資料表 (Excel / Notion 風格) -->
+        <div
+          id="tableViewWrapper"
+          class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
+        >
+          <div class="table-container">
+            <table class="w-full text-sm text-left border-collapse">
+              <thead
+                id="recordTableHead"
+                class="bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-xs uppercase border-b border-slate-200 dark:border-slate-700 select-none"
+              ></thead>
+              <tbody
+                id="recordTableBody"
+                class="divide-y divide-slate-200 dark:divide-slate-700"
+              ></tbody>
+            </table>
+          </div>
+          <!-- 分頁控制（支援 10,000+ 筆資料不卡頓） -->
+          <div
+            class="p-3 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2 text-xs"
+          >
+            <div class="flex items-center gap-2">
+              <span>每頁顯示：</span>
+              <select
+                id="pageSizeSelect"
+                onchange="App.changePageSize(this.value)"
+                class="px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+              >
+                <option value="30">30 筆</option>
+                <option value="60">60 筆</option>
+                <option value="120">120 筆</option>
+                <option value="999999">全部顯示</option>
+              </select>
+              <span class="text-slate-400 hidden sm:inline"
+                >💡
+                提示：點擊表格內的「晨起、睡前、睡眠品質」可直接快速修改</span
+              >
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                onclick="App.changePage(-1)"
+                id="btnPrevPage"
+                class="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-40"
+              >
+                上一頁
+              </button>
+              <span id="pageIndicator">第 1 / 1 頁</span>
+              <button
+                onclick="App.changePage(1)"
+                id="btnNextPage"
+                class="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-40"
+              >
+                下一頁
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 手機版專屬卡片清單檢視 -->
+        <div id="cardViewWrapper" class="hidden space-y-3"></div>
+      </section>
+
+      <!-- 2. 統計分析 -->
+      <section id="tab-stats" class="tab-content hidden space-y-6">
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
+        >
+          <div>
+            <h2 class="text-lg font-bold">統計分析與長期趨勢</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              呈現個人紀錄中的統計分布現象，不作為醫療診斷依據
+            </p>
+          </div>
+          <div
+            class="inline-flex rounded-lg border border-slate-300 dark:border-slate-600 p-0.5 bg-slate-100 dark:bg-slate-700"
+          >
+            <button
+              onclick="App.setStatsRange(7)"
+              data-srange="7"
+              class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
+            >
+              7天
+            </button>
+            <button
+              onclick="App.setStatsRange(30)"
+              data-srange="30"
+              class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
+            >
+              30天
+            </button>
+            <button
+              onclick="App.setStatsRange(90)"
+              data-srange="90"
+              class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
+            >
+              90天
+            </button>
+            <button
+              onclick="App.setStatsRange(0)"
+              data-srange="0"
+              class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
+            >
+              全部
+            </button>
+          </div>
+        </div>
+
+        <!-- 頂部核心指標 -->
+        <div
+          class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+          id="statsTopCards"
+        ></div>
+
+        <!-- 週報與月報摘要 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2"
+            id="weeklyReportBox"
+          ></div>
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2"
+            id="monthlyReportBox"
+          ></div>
+        </div>
+
+        <!-- 折線趨勢圖：晨起、睡前、晨起 vs 睡前比較 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
+          >
+            <h3 class="text-sm font-bold mb-2">🌅 晨起分數趨勢 (1~10)</h3>
+            <div
+              id="chartMorning"
+              class="w-full h-52 flex items-center justify-center text-sm text-slate-400"
+            ></div>
+          </div>
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
+          >
+            <h3 class="text-sm font-bold mb-2">🌙 睡前分數趨勢 (1~10)</h3>
+            <div
+              id="chartBedtime"
+              class="w-full h-52 flex items-center justify-center text-sm text-slate-400"
+            ></div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold">⚖️ 晨起 vs 睡前 雙線比較圖</h3>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="flex items-center gap-1"
+                ><span class="w-3 h-1 bg-blue-500 inline-block"></span>
+                晨起</span
+              >
+              <span class="flex items-center gap-1"
+                ><span class="w-3 h-1 bg-purple-500 inline-block"></span>
+                睡前</span
+              >
+            </div>
+          </div>
+          <div
+            id="chartCompare"
+            class="w-full h-56 flex items-center justify-center text-sm text-slate-400"
+          ></div>
+        </div>
+
+        <!-- 睡眠品質統計 與 晨起關聯分析 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+          >
+            <h3 class="text-sm font-bold">🛌 睡眠品質分布統計</h3>
+            <div
+              id="sleepQualityDistribution"
+              class="space-y-2.5 text-sm"
+            ></div>
+          </div>
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+          >
+            <h3 class="text-sm font-bold">🔍 睡眠品質與晨起分數關聯現象</h3>
+            <div id="qualityMorningCorrelation" class="space-y-2 text-sm"></div>
+          </div>
+        </div>
+
+        <!-- 自訂欄位數值統計 與 條件交叉分析 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+          >
+            <h3 class="text-sm font-bold">
+              📈 自訂數值欄位統計（平均／最高／最低）
+            </h3>
+            <div id="customNumericStats" class="space-y-2.5 text-sm"></div>
+          </div>
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+          >
+            <h3 class="text-sm font-bold">🔀 生活條件交叉分析（資料相關性）</h3>
+            <div id="conditionalCrossStats" class="space-y-2.5 text-sm"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 日曆功能 -->
+      <section id="tab-calendar" class="tab-content hidden space-y-4">
+        <div
+          class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3"
+        >
+          <div class="flex items-center gap-2">
+            <button
+              onclick="App.changeCalendarMonth(-1)"
+              class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm"
+            >
+              ◀ 上個月
+            </button>
+            <h2 id="calendarTitle" class="text-lg font-bold px-2">
+              2026 年 10 月
+            </h2>
+            <button
+              onclick="App.changeCalendarMonth(1)"
+              class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm"
+            >
+              下個月 ▶
+            </button>
+            <button
+              onclick="App.resetCalendarToToday()"
+              class="px-2.5 py-1 text-xs rounded bg-slate-100 dark:bg-slate-700 ml-1"
+            >
+              回到本月
+            </button>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span>視覺標示依據：</span>
+            <select
+              id="calendarColorMode"
+              onchange="App.renderCalendar()"
+              class="px-2.5 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+            >
+              <option value="quality">睡眠品質 (好/普通/差/很差)</option>
+              <option value="morning">
+                晨起分數 (高分良好/中間普通/低分注意)
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div
+            class="lg:col-span-2 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
+          >
+            <div
+              id="calendarWeekHeader"
+              class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-500 pb-2 border-b border-slate-200 dark:border-slate-700"
+            ></div>
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1.5 mt-2"></div>
+          </div>
+          <!-- 選中日期詳情面板 -->
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between"
+            id="calendarDetailPanel"
+          ></div>
+        </div>
+      </section>
+
+      <!-- 4. 自訂欄位管理 -->
+      <section id="tab-fields" class="tab-content hidden space-y-4">
+        <div
+          class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3"
+        >
+          <div>
+            <h2 class="text-lg font-bold">自訂欄位系統與排序管理</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              可自由新增生活與身體指標（體重、運動、咖啡、血壓等），並調整表格顯示順序
+            </p>
+          </div>
+          <button
+            onclick="App.openCustomFieldModal()"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+          >
+            ＋新增欄位
+          </button>
+        </div>
+
+        <!-- 預設範例快速加入 -->
+        <div
+          class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
+        >
+          <div class="text-xs font-bold text-slate-500 mb-2">
+            快速加入常用欄位範本（點擊即可建立）：
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              onclick="
+                App.quickAddPresetField(
+                  '心情',
+                  'select',
+                  ['很差', '差', '普通', '好', '很好'],
+                  '',
+                  true,
+                )
+              "
+              class="px-2.5 py-1 text-xs rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              ＋ 心情 (下拉選單)
+            </button>
+            <button
+              onclick="
+                App.quickAddPresetField('是否運動', 'boolean', [], '', true)
+              "
+              class="px-2.5 py-1 text-xs rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              ＋ 是否運動 (是/否)
+            </button>
+            <button
+              onclick="App.quickAddPresetField('體重', 'unit', [], 'kg', true)"
+              class="px-2.5 py-1 text-xs rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              ＋ 體重 (數值+kg)
+            </button>
+            <button
+              onclick="
+                App.quickAddPresetField('疲勞程度', 'score10', [], '', true)
+              "
+              class="px-2.5 py-1 text-xs rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              ＋ 疲勞程度 (1~10分)
+            </button>
+            <button
+              onclick="App.quickAddPresetField('咖啡', 'boolean', [], '', true)"
+              class="px-2.5 py-1 text-xs rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              ＋ 咖啡 (是/否)
+            </button>
+            <button
+              onclick="
+                App.quickAddPresetField('步數', 'integer', [], '步', false)
+              "
+              class="px-2.5 py-1 text-xs rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              ＋ 步數 (整數)
+            </button>
+            <button
+              onclick="
+                App.quickAddPresetField('睡眠時數', 'unit', [], '小時', true)
+              "
+              class="px-2.5 py-1 text-xs rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            >
+              ＋ 睡眠時數 (數值+小時)
+            </button>
+          </div>
+        </div>
+
+        <!-- 自訂欄位清單與全欄位排序 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div
+            class="lg:col-span-2 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+          >
+            <h3 class="text-sm font-bold">已建立的自訂欄位</h3>
+            <div
+              id="customFieldsList"
+              class="divide-y divide-slate-200 dark:divide-slate-700 text-sm"
+            ></div>
+          </div>
+          <div
+            class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+          >
+            <h3 class="text-sm font-bold">
+              表格欄位整體順序（可拖曳或點擊上下移動）
+            </h3>
+            <p class="text-xs text-slate-500">
+              調整每日紀錄表格與匯出 CSV 的欄位排列順序，設定將永久保存。
+            </p>
+            <ul id="fieldOrderList" class="space-y-1.5 text-sm"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. 資料管理 -->
+      <section id="tab-data" class="tab-content hidden space-y-4">
+        <div
+          class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4"
+        >
+          <div>
+            <h2 class="text-lg font-bold">資料備份、匯出與管理</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              所有資料預設保存在你的瀏覽器 IndexedDB
+              資料庫中，不會上傳至任何外部伺服器。
+            </p>
+          </div>
+          <div
+            class="grid grid-cols-2 sm:grid-cols-4 gap-3"
+            id="dataOverviewCards"
+          ></div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div
+              class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+            >
+              <h3 class="text-sm font-bold">📤 資料匯出與完整備份</h3>
+              <p class="text-xs text-slate-500">
+                CSV 檔案已包含 UTF-8 BOM 標記，可直接使用 Excel 或 Google Sheets
+                正常開啟中文。
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  onclick="App.exportCSV()"
+                  class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium"
+                >
+                  📊 匯出 CSV (Excel)
+                </button>
+                <button
+                  onclick="App.exportRecordsJSON()"
+                  class="px-3.5 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium"
+                >
+                  📄 匯出紀錄 JSON
+                </button>
+                <button
+                  onclick="App.exportFullBackup()"
+                  class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                >
+                  📦 完整系統備份 (.json)
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+            >
+              <h3 class="text-sm font-bold">📥 匯入備份與還原</h3>
+              <p class="text-xs text-slate-500">
+                選擇先前匯出的 JSON
+                備份檔，系統會先驗證格式並讓你選擇「合併」或「覆蓋」。
+              </p>
+              <div>
+                <input
+                  type="file"
+                  id="importBackupInput"
+                  accept=".json"
+                  onchange="App.handleBackupFileSelect(event)"
+                  class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 測試用 Demo 資料與危險操作區 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div
+              class="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-900/10 space-y-2"
+            >
+              <h3 class="text-sm font-bold text-amber-800 dark:text-amber-300">
+                🧪 體驗與測試用 Demo 資料
+              </h3>
+              <p class="text-xs text-slate-600 dark:text-slate-400">
+                可產生最近 30 天的模擬紀錄來測試圖表與統計，Demo
+                資料帶有獨立標記，隨時可一鍵清除，不會與你正式輸入的紀錄混淆。
+              </p>
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button
+                  onclick="App.generateDemoData()"
+                  class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-medium"
+                >
+                  載入 30 天 Demo 資料
+                </button>
+                <button
+                  onclick="App.clearDemoData()"
+                  class="px-3 py-1.5 border border-amber-600 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium"
+                >
+                  清除所有 Demo 資料
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-900/10 space-y-2"
+            >
+              <h3 class="text-sm font-bold text-rose-700 dark:text-rose-300">
+                ⚠️ 高風險操作：刪除全部資料
+              </h3>
+              <p class="text-xs text-slate-600 dark:text-slate-400">
+                清空本機瀏覽器內的所有每日紀錄與自訂設定。執行前系統會進行二次確認並提供備份選項。
+              </p>
+              <div class="pt-1">
+                <button
+                  onclick="App.openDeleteAllModal()"
+                  class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium"
+                >
+                  🗑 刪除全部資料
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. 設定 -->
+      <section id="tab-settings" class="tab-content hidden space-y-4">
+        <div
+          class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 max-w-2xl space-y-5"
+        >
+          <h2
+            class="text-lg font-bold border-b border-slate-200 dark:border-slate-700 pb-2"
+          >
+            系統偏好設定
+          </h2>
+
+          <div class="space-y-4 text-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium">日期顯示格式</div>
+                <div class="text-xs text-slate-500">
+                  影響表格、首頁與匯出顯示格式
+                </div>
+              </div>
+              <select
+                id="settingDateFormat"
+                onchange="App.saveUserSettings()"
+                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+              >
+                <option value="YYYY/MM/DD">YYYY/MM/DD (預設)</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium">每週第一天</div>
+                <div class="text-xs text-slate-500">
+                  影響日曆排列與本週統計計算起點
+                </div>
+              </div>
+              <select
+                id="settingWeekStart"
+                onchange="App.saveUserSettings()"
+                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+              >
+                <option value="1">星期一 (預設)</option>
+                <option value="0">星期日</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium">外觀主題</div>
+                <div class="text-xs text-slate-500">
+                  選擇淺色、深色或自動跟隨系統
+                </div>
+              </div>
+              <select
+                id="settingTheme"
+                onchange="App.saveUserSettings()"
+                class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+              >
+                <option value="system">跟隨系統 (預設)</option>
+                <option value="light">淺色模式</option>
+                <option value="dark">深色模式</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ================= 彈出視窗 (Modals) ================= -->
+
+    <!-- 新增/編輯每日紀錄 Modal -->
+    <div
+      id="recordModal"
+      class="hidden fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-3 overflow-y-auto"
+    >
+      <div
+        class="bg-white dark:bg-slate-800 w-full max-w-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden my-auto"
+      >
+        <div
+          class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-2">
+            <h3 id="recordModalTitle" class="font-bold text-base">
+              新增今日紀錄
+            </h3>
+            <span
+              id="quickModeBadge"
+              class="hidden px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-800 font-medium"
+              >⚡ 快速模式</span
+            >
+          </div>
+          <button
+            onclick="App.closeRecordModal()"
+            class="text-slate-400 hover:text-slate-600 text-sm px-2 py-1"
+          >
+            ✕ 關閉 (Esc)
+          </button>
+        </div>
+
+        <form
+          id="recordForm"
+          onsubmit="App.saveRecordForm(event)"
+          class="p-5 space-y-4 max-h-[80vh] overflow-y-auto"
+        >
+          <input type="hidden" id="formRecordId" />
+          <!-- 日期與自動星期 -->
+          <div class="grid grid-cols-3 gap-3 items-end">
+            <div class="col-span-2">
+              <label
+                class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1"
+                >日期 *</label
+              >
+              <input
+                type="date"
+                id="formDate"
+                required
+                onchange="App.onFormDateChange()"
+                class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1"
+                >星期 (自動)</label
+              >
+              <input
+                type="text"
+                id="formWeekday"
+                readonly
+                class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700/50 text-center text-sm font-semibold"
+              />
+            </div>
+          </div>
+          <div
+            id="duplicateDateNotice"
+            class="hidden text-xs text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-200 p-2.5 rounded-lg border border-amber-200"
+          ></div>
+
+          <!-- 晨起 1-10 按鈕組 -->
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label
+                class="text-xs font-bold text-slate-600 dark:text-slate-300"
+                >🌅 晨起狀態評分 (1=非常差，10=非常好) *</label
+              >
+              <span
+                id="labelMorningScore"
+                class="text-sm font-bold text-blue-600 dark:text-blue-400"
+                >7 分</span
+              >
+            </div>
+            <div
+              id="morningScoreBtns"
+              class="grid grid-cols-5 sm:grid-cols-10 gap-1.5"
+            ></div>
+          </div>
+
+          <!-- 睡前 1-10 按鈕組 -->
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label
+                class="text-xs font-bold text-slate-600 dark:text-slate-300"
+                >🌙 睡前狀態評分 (1=非常差，10=非常好) *</label
+              >
+              <span
+                id="labelBedtimeScore"
+                class="text-sm font-bold text-purple-600 dark:text-purple-400"
+                >7 分</span
+              >
+            </div>
+            <div
+              id="bedtimeScoreBtns"
+              class="grid grid-cols-5 sm:grid-cols-10 gap-1.5"
+            ></div>
+          </div>
+
+          <!-- 睡眠品質 4 選項 -->
+          <div>
+            <label
+              class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5"
+              >🛌 睡眠品質 *</label
+            >
+            <div id="sleepQualityBtns" class="grid grid-cols-4 gap-2"></div>
+          </div>
+
+          <!-- 備註 -->
+          <div>
+            <label
+              class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1"
+              >📝 備註（身體狀況、心情、運動、飲食、咖啡、壓力等）</label
+            >
+            <textarea
+              id="formNote"
+              rows="3"
+              placeholder="例如：調整完後，感覺全身有放鬆感..."
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm"
+            ></textarea>
+          </div>
+
+          <!-- 自訂欄位動態區 -->
+          <div
+            id="formCustomFieldsWrapper"
+            class="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-700"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500"
+                >自訂生活與身體指標</span
+              >
+              <button
+                type="button"
+                id="btnToggleCustomInForm"
+                onclick="App.toggleCustomFieldsInForm()"
+                class="text-xs text-blue-600 hover:underline"
+              >
+                切換顯示
+              </button>
+            </div>
+            <div
+              id="formCustomFieldsContainer"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            ></div>
+          </div>
+
+          <div
+            class="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2"
+          >
+            <button
+              type="button"
+              id="btnDeleteInModal"
+              onclick="App.deleteFromModal()"
+              class="hidden px-3.5 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+            >
+              🗑 刪除此筆紀錄
+            </button>
+            <div class="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onclick="App.closeRecordModal()"
+                class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm"
+              >
+                💾 儲存紀錄 (Enter)
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 自訂欄位新增/編輯 Modal -->
+    <div
+      id="customFieldModal"
+      class="hidden fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-3"
+    >
+      <div
+        class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4"
+      >
+        <div
+          class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3"
+        >
+          <h3 id="customFieldModalTitle" class="font-bold text-base">
+            新增自訂欄位
+          </h3>
+          <button
+            onclick="App.closeCustomFieldModal()"
+            class="text-slate-400 hover:text-slate-600 text-sm"
+          >
+            ✕ 關閉
+          </button>
+        </div>
+        <form
+          id="customFieldForm"
+          onsubmit="App.saveCustomFieldForm(event)"
+          class="space-y-3 text-sm"
+        >
+          <input type="hidden" id="cfId" />
+          <div>
+            <label class="block text-xs font-bold mb-1">欄位名稱 *</label>
+            <input
+              type="text"
+              id="cfName"
+              required
+              placeholder="例如：體重、心情、是否運動"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">欄位類型 *</label>
+            <select
+              id="cfType"
+              onchange="App.onCfTypeChange()"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+            >
+              <option value="text">1. 文字 (單行)</option>
+              <option value="textarea">2. 長文字 (多行)</option>
+              <option value="integer">3. 整數 (如：步數、心率)</option>
+              <option value="decimal">4. 小數 (如：體溫)</option>
+              <option value="score10">5. 1～10 分數點選</option>
+              <option value="boolean">6. 是／否</option>
+              <option value="date">7. 日期</option>
+              <option value="time">8. 時間 (如：入睡時間)</option>
+              <option value="select">9. 下拉選單 (單選)</option>
+              <option value="multiselect">10. 多選標籤</option>
+              <option value="slider">11. 滑桿 (0~100)</option>
+              <option value="unit">12. 數值＋單位 (如：體重 kg)</option>
+            </select>
+          </div>
+          <div id="cfUnitBox" class="hidden">
+            <label class="block text-xs font-bold mb-1">單位名稱 *</label>
+            <input
+              type="text"
+              id="cfUnit"
+              placeholder="例如：kg、小時、mg、mmHg"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent"
+            />
+          </div>
+          <div id="cfOptionsBox" class="hidden">
+            <label class="block text-xs font-bold mb-1"
+              >選項清單（請用逗號或換行分隔）*</label
+            >
+            <textarea
+              id="cfOptions"
+              rows="3"
+              placeholder="很差, 差, 普通, 好, 很好"
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent"
+            ></textarea>
+          </div>
+          <div class="flex items-center gap-4 pt-1">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="cfRequired" class="rounded" />
+              <span>設為必填欄位</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="cfVisible" checked class="rounded" />
+              <span>顯示在首頁表格</span>
+            </label>
+          </div>
+          <div
+            class="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2"
+          >
+            <button
+              type="button"
+              onclick="App.closeCustomFieldModal()"
+              class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            >
+              儲存欄位
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 刪除自訂欄位確認 Modal (保留或連同歷史資料刪除) -->
+    <div
+      id="deleteFieldModal"
+      class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3"
+    >
+      <div
+        class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4"
+      >
+        <h3 id="deleteFieldTitle" class="font-bold text-base text-rose-600">
+          刪除自訂欄位確認
+        </h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          刪除欄位不代表一定要刪除歷史資料。請選擇是否保留過往已記錄的歷史資料：
+        </p>
+        <div class="space-y-2 pt-2">
+          <button
+            onclick="App.confirmDeleteField(true)"
+            class="w-full py-2.5 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium"
+          >
+            🗂 刪除欄位但保留歷史資料（推薦）
+          </button>
+          <button
+            onclick="App.confirmDeleteField(false)"
+            class="w-full py-2.5 px-4 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium"
+          >
+            🧨 刪除欄位及所有相關資料
+          </button>
+          <button
+            onclick="App.closeDeleteFieldModal()"
+            class="w-full py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-600 text-sm"
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 匯入備份確認 Modal -->
+    <div
+      id="importConfirmModal"
+      class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3"
+    >
+      <div
+        class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4"
+      >
+        <h3 class="font-bold text-base">📦 備份檔案檢查通過</h3>
+        <p
+          id="importSummaryText"
+          class="text-sm text-slate-600 dark:text-slate-300 font-medium"
+        ></p>
+        <p class="text-xs text-slate-500">
+          請選擇還原方式：「合併」會保留目前資料並加入備份資料（相同日期以備份更新）；「覆蓋」會清空現有資料並完全取代。
+        </p>
+        <div class="flex flex-col gap-2 pt-2">
+          <button
+            onclick="App.executeImport('merge')"
+            class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+          >
+            🔄 合併資料（保留現有＋匯入）
+          </button>
+          <button
+            onclick="App.executeImport('overwrite')"
+            class="w-full py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium"
+          >
+            ⚠️ 覆蓋資料（完全取代目前資料）
+          </button>
+          <button
+            onclick="App.closeImportModal()"
+            class="w-full py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm"
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 刪除全部資料高風險確認 Modal -->
+    <div
+      id="deleteAllModal"
+      class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3"
+    >
+      <div
+        class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4"
+      >
+        <h3 class="font-bold text-base text-rose-600">
+          ⚠️ 確定要刪除全部資料嗎？
+        </h3>
+        <p id="deleteAllCountText" class="text-sm font-semibold"></p>
+        <p class="text-xs text-slate-500">
+          刪除後無法復原。強烈建議在刪除前先進行完整備份。
+        </p>
+        <div class="flex flex-col gap-2 pt-2">
+          <button
+            onclick="App.backupThenDeleteAll()"
+            class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+          >
+            📦 備份後刪除
+          </button>
+          <button
+            onclick="App.executeDeleteAll()"
+            class="w-full py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium"
+          >
+            🧨 直接刪除全部資料
+          </button>
+          <button
+            onclick="App.closeDeleteAllModal()"
+            class="w-full py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm"
+          >
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 首次使用歡迎畫面 Modal -->
+    <div
+      id="welcomeModal"
+      class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 text-center space-y-4"
+      >
+        <div class="text-4xl">🌿</div>
+        <h2 class="text-xl font-bold">歡迎使用每日睡眠與身體狀況紀錄</h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          每天只需花 <strong>1 分鐘</strong> 記錄晨起、睡前與睡眠品質，<br />
+          長期累積後，透過日曆与趨勢圖觀察自己的生活變化。
+        </p>
+        <div
+          class="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700/60 p-3 rounded-xl"
+        >
+          🔒 所有資料皆安全儲存於你的本機瀏覽器中，不會外傳。
+        </div>
+        <div class="pt-2 flex flex-col gap-2">
+          <button
+            onclick="App.dismissWelcome(false)"
+            class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm shadow"
+          >
+            開始使用
+          </button>
+          <button
+            onclick="App.dismissWelcome(true)"
+            class="w-full py-2 text-xs text-slate-500 hover:underline"
+          >
+            先載入 30 天模擬 Demo 資料體驗看看
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部浮動 Toast 與 Undo 復原條 -->
+    <div
+      id="toastContainer"
+      class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-3"
+    ></div>
+
+    <!-- ================= 核心 JavaScript (IndexedDB + 完整業務邏輯) ================= -->
+    <script>
+      const DB_NAME = "SleepBodyTrackerDB_v1";
+      const DB_VERSION = 1;
+      const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+      const QUALITIES = ["很差", "差", "普通", "好"];
+      const QUALITY_WEIGHT = { 很差: 1, 差: 2, 普通: 3, 好: 4 };
+
+      const DB = {
+        db: null,
+        init() {
+          return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains("records")) {
+                const store = db.createObjectStore("records", {
+                  keyPath: "id",
+                });
+                store.createIndex("date", "date", { unique: true });
+              }
+              if (!db.objectStoreNames.contains("customFields")) {
+                db.createObjectStore("customFields", { keyPath: "id" });
+              }
+              if (!db.objectStoreNames.contains("settings")) {
+                db.createObjectStore("settings", { keyPath: "key" });
+              }
+            };
+            req.onsuccess = (e) => {
+              this.db = e.target.result;
+              resolve();
+            };
+            req.onerror = () =>
+              reject(
+                "無法開啟本機 IndexedDB 資料庫，請確認瀏覽器未處於嚴格隱私阻擋模式。",
+              );
+          });
+        },
+        getAll(storeName) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(storeName, "readonly");
+            const req = tx.objectStore(storeName).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(`讀取 ${storeName} 失敗`);
+          });
+        },
+        put(storeName, item) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(storeName, "readwrite");
+            const req = tx.objectStore(storeName).put(item);
+            req.onsuccess = () => resolve(item);
+            req.onerror = () => reject(`寫入 ${storeName} 失敗`);
+          });
+        },
+        delete(storeName, key) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(storeName, "readwrite");
+            const req = tx.objectStore(storeName).delete(key);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(`刪除 ${storeName} 項目失敗`);
+          });
+        },
+        clear(storeName) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(storeName, "readwrite");
+            const req = tx.objectStore(storeName).clear();
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(`清空 ${storeName} 失敗`);
+          });
+        },
+      };
+
+      const App = {
+        records: [],
+        customFields: [],
+        fieldOrder: [
+          "date",
+          "weekday",
+          "morningScore",
+          "bedtimeScore",
+          "sleepQuality",
+          "note",
+        ],
+        displaySettings: {
+          visibleColumns: {
+            date: true,
+            weekday: true,
+            morningScore: true,
+            bedtimeScore: true,
+            sleepQuality: true,
+            note: true,
+          },
+          noteWidth: "220px",
+          mobileCardMode: false,
+        },
+        userSettings: {
+          dateFormat: "YYYY/MM/DD",
+          weekStart: 1,
+          theme: "system",
+          welcomed: false,
+          lastBackupMilestone: 0,
+        },
+        currentTab: "records",
+        filteredRecords: [],
+        currentPage: 1,
+        pageSize: 30,
+        statsRangeDays: 30,
+        calendarYear: new Date().getFullYear(),
+        calendarMonth: new Date().getMonth(),
+        selectedCalendarDate: null,
+        formMorningScore: 7,
+        formBedtimeScore: 7,
+        formSleepQuality: "普通",
+        isQuickMode: false,
+        lastDeletedRecord: null,
+        undoTimer: null,
+        pendingDeleteFieldId: null,
+        pendingImportData: null,
+
+        async init() {
+          try {
+            await DB.init();
+            await this.loadAllData();
+            this.applyTheme();
+            this.bindKeyboardShortcuts();
+            this.selectedCalendarDate = this.getTodayISO();
+            this.renderAll();
+            if (!this.userSettings.welcomed && this.records.length === 0) {
+              document
+                .getElementById("welcomeModal")
+                .classList.remove("hidden");
+            }
+          } catch (err) {
+            this.showToast(String(err), "error");
+          }
+        },
+
+        async loadAllData() {
+          this.records = await DB.getAll("records");
+          this.records.sort((a, b) => b.date.localeCompare(a.date));
+          this.customFields = await DB.getAll("customFields");
+          this.customFields.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+          const settingsRows = await DB.getAll("settings");
+          const map = {};
+          settingsRows.forEach((r) => (map[r.key] = r.value));
+
+          if (map.userSettings)
+            this.userSettings = { ...this.userSettings, ...map.userSettings };
+          if (map.displaySettings)
+            this.displaySettings = {
+              ...this.displaySettings,
+              ...map.displaySettings,
+            };
+          if (map.fieldOrder) this.fieldOrder = map.fieldOrder;
+
+          this.syncFieldOrderWithCustomFields();
+        },
+
+        syncFieldOrderWithCustomFields() {
+          const baseCols = [
+            "date",
+            "weekday",
+            "morningScore",
+            "bedtimeScore",
+            "sleepQuality",
+            "note",
+          ];
+          const customIds = this.customFields.map((f) => f.id);
+          const validSet = new Set([...baseCols, ...customIds]);
+          this.fieldOrder = this.fieldOrder.filter((k) => validSet.has(k));
+
+          baseCols.forEach((b) => {
+            if (!this.fieldOrder.includes(b)) this.fieldOrder.push(b);
+            if (this.displaySettings.visibleColumns[b] === undefined) {
+              this.displaySettings.visibleColumns[b] = true;
+            }
+          });
+          this.customFields.forEach((cf) => {
+            if (!this.fieldOrder.includes(cf.id)) {
+              const noteIdx = this.fieldOrder.indexOf("note");
+              if (noteIdx !== -1) this.fieldOrder.splice(noteIdx, 0, cf.id);
+              else this.fieldOrder.push(cf.id);
+            }
+            if (this.displaySettings.visibleColumns[cf.id] === undefined) {
+              this.displaySettings.visibleColumns[cf.id] = cf.visible !== false;
+            }
+          });
+        },
+
+        async persistSettings() {
+          await DB.put("settings", {
+            key: "userSettings",
+            value: this.userSettings,
+          });
+          await DB.put("settings", {
+            key: "displaySettings",
+            value: this.displaySettings,
+          });
+          await DB.put("settings", {
+            key: "fieldOrder",
+            value: this.fieldOrder,
+          });
+        },
+
+        getTodayISO() {
+          const now = new Date();
+          const y = now.getFullYear();
+          const m = String(now.getMonth() + 1).padStart(2, "0");
+          const d = String(now.getDate()).padStart(2, "0");
+          return `${y}-${m}-${d}`;
+        },
+
+        formatDateDisplay(isoDate) {
+          if (!isoDate) return "";
+          return this.userSettings.dateFormat === "YYYY/MM/DD"
+            ? isoDate.replace(/-/g, "/")
+            : isoDate;
+        },
+
+        getWeekdayChar(isoDate) {
+          if (!isoDate) return "";
+          const [y, m, d] = isoDate.split("-").map(Number);
+          const dt = new Date(y, m - 1, d);
+          return WEEKDAYS[dt.getDay()] || "";
+        },
+
+        escapeHTML(str) {
+          if (str === null || str === undefined) return "";
+          return String(str).replace(
+            /[&<>"']/g,
+            (s) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[s],
+          );
+        },
+
+        applyTheme() {
+          const root = document.documentElement;
+          const theme = this.userSettings.theme;
+          const isDark =
+            theme === "dark" ||
+            (theme === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          root.classList.toggle("dark", isDark);
+          document.getElementById("settingDateFormat").value =
+            this.userSettings.dateFormat;
+          document.getElementById("settingWeekStart").value = String(
+            this.userSettings.weekStart,
+          );
+          document.getElementById("settingTheme").value =
+            this.userSettings.theme;
+          document.getElementById("noteColWidthSelect").value =
+            this.displaySettings.noteWidth || "220px";
+        },
+
+        async saveUserSettings() {
+          this.userSettings.dateFormat =
+            document.getElementById("settingDateFormat").value;
+          this.userSettings.weekStart = Number(
+            document.getElementById("settingWeekStart").value,
+          );
+          this.userSettings.theme =
+            document.getElementById("settingTheme").value;
+          await this.persistSettings();
+          this.applyTheme();
+          this.renderAll();
+          this.showToast("設定已儲存");
+        },
+
+        switchTab(tab) {
+          this.currentTab = tab;
+          document
+            .querySelectorAll(".tab-content")
+            .forEach((el) => el.classList.add("hidden"));
+          document.getElementById(`tab-${tab}`).classList.remove("hidden");
+
+          document.querySelectorAll(".nav-btn").forEach((btn) => {
+            const active = btn.dataset.tab === tab;
+            btn.className = `nav-btn flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium text-left transition-colors ${
+              active
+                ? "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 font-semibold"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
+            }`;
+          });
+
+          if (window.innerWidth < 768) {
+            document.getElementById("mainNav").classList.add("hidden");
+          }
+          this.renderAll();
+        },
+
+        toggleMobileNav() {
+          document.getElementById("mainNav").classList.toggle("hidden");
+        },
+
+        renderAll() {
+          this.renderHeaderAndStreaks();
+          this.renderGentleAlerts();
+          this.applyFilters();
+          this.renderColumnSelector();
+          if (this.currentTab === "stats") this.renderStatisticsPage();
+          if (this.currentTab === "calendar") this.renderCalendar();
+          if (this.currentTab === "fields") this.renderCustomFieldsPage();
+          if (this.currentTab === "data") this.renderDataManagementPage();
+        },
+
+        /* ================= 連續紀錄、今日狀態與異常提醒 ================= */
+        calculateStreaks() {
+          if (this.records.length === 0)
+            return {
+              current: 0,
+              longest: 0,
+              monthCount: 0,
+              daysInMonth: 30,
+              yearCount: 0,
+            };
+          const dateSet = new Set(this.records.map((r) => r.date));
+          const today = this.getTodayISO();
+          const [ty, tm, td] = today.split("-").map(Number);
+
+          // 目前連續天數（若今天尚未紀錄，從昨天起算）
+          let curr = 0;
+          let checkDate = new Date(ty, tm - 1, td);
+          if (!dateSet.has(this.dateToISO(checkDate))) {
+            checkDate.setDate(checkDate.getDate() - 1);
+          }
+          while (dateSet.has(this.dateToISO(checkDate))) {
+            curr++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          }
+
+          // 最長連續天數
+          const sortedAsc = [...dateSet].sort();
+          let longest = 0,
+            temp = 0,
+            prevDate = null;
+          sortedAsc.forEach((dStr) => {
+            const [y, m, d] = dStr.split("-").map(Number);
+            const dt = new Date(y, m - 1, d);
+            if (prevDate) {
+              const diff = Math.round((dt - prevDate) / 86400000);
+              temp = diff === 1 ? temp + 1 : 1;
+            } else {
+              temp = 1;
+            }
+            if (temp > longest) longest = temp;
+            prevDate = dt;
+          });
+
+          const monthPrefix = today.slice(0, 7);
+          const yearPrefix = today.slice(0, 4);
+          const monthCount = this.records.filter((r) =>
+            r.date.startsWith(monthPrefix),
+          ).length;
+          const yearCount = this.records.filter((r) =>
+            r.date.startsWith(yearPrefix),
+          ).length;
+          const daysInMonth = new Date(ty, tm, 0).getDate();
+
+          return { current: curr, longest, monthCount, daysInMonth, yearCount };
+        },
+
+        dateToISO(dt) {
+          const y = dt.getFullYear();
+          const m = String(dt.getMonth() + 1).padStart(2, "0");
+          const d = String(dt.getDate()).padStart(2, "0");
+          return `${y}-${m}-${d}`;
+        },
+
+        renderHeaderAndStreaks() {
+          const today = this.getTodayISO();
+          const w = this.getWeekdayChar(today);
+          document.getElementById("todayHeaderDate").textContent =
+            `今天：${this.formatDateDisplay(today)}（${w}）`;
+
+          const todayRec = this.records.find((r) => r.date === today);
+          const badge = document.getElementById("todayStatusBadge");
+          const summary = document.getElementById("todaySummaryText");
+          const btnPrimary = document.getElementById("btnPrimaryToday");
+
+          if (todayRec) {
+            badge.textContent = "今天已完成紀錄 ✓";
+            badge.className =
+              "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200";
+            summary.innerHTML = `晨起：<strong>${todayRec.morningScore}</strong> ｜ 睡前：<strong>${todayRec.bedtimeScore}</strong> ｜ 睡眠品質：${this.renderQualityBadgeHTML(todayRec.sleepQuality)} ${todayRec.note ? `｜ 備註：${this.escapeHTML(todayRec.note.slice(0, 35))}` : ""}`;
+            btnPrimary.textContent = "✏️ 編輯今天";
+          } else {
+            badge.textContent = "今天尚未紀錄";
+            badge.className =
+              "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200";
+            summary.textContent =
+              "點擊右側「＋新增今日紀錄」或「⚡ 30秒快速紀錄」即可完成今日狀態登錄。";
+            btnPrimary.textContent = "＋新增今日紀錄";
+          }
+
+          const st = this.calculateStreaks();
+          const rate = Math.round((st.monthCount / st.daysInMonth) * 100);
+          document.getElementById("quickStatStreak").innerHTML =
+            `🔥 ${st.current} 天 <span class="text-xs font-normal text-slate-400">/ 最長 ${st.longest} 天</span>`;
+          document.getElementById("quickStatMonthRate").textContent =
+            `${st.monthCount} / ${st.daysInMonth} 天 (${rate}%)`;
+          document.getElementById("sidebarStreak").textContent =
+            `🔥 連續紀錄：${st.current} 天 (最長 ${st.longest} 天)`;
+          document.getElementById("sidebarMonthCount").textContent =
+            `📅 本月紀錄：${st.monthCount} / ${st.daysInMonth} 天 (${rate}%)`;
+
+          const hasDemo = this.records.some((r) => r.isDemo);
+          document
+            .getElementById("sidebarDemoBadge")
+            .classList.toggle("hidden", !hasDemo);
+
+          // 本週平均
+          const weekRecs = this.getRecordsInLastNDays(7);
+          document.getElementById("quickStatWeekMorning").textContent =
+            weekRecs.length
+              ? this.avg(weekRecs.map((r) => r.morningScore))
+              : "--";
+          document.getElementById("quickStatWeekBed").textContent =
+            weekRecs.length
+              ? this.avg(weekRecs.map((r) => r.bedtimeScore))
+              : "--";
+        },
+
+        renderGentleAlerts() {
+          const container = document.getElementById("gentleAlerts");
+          const alerts = [];
+          const sortedDesc = [...this.records].sort((a, b) =>
+            b.date.localeCompare(a.date),
+          );
+          const recent3 = sortedDesc.slice(0, 3);
+
+          if (
+            recent3.length === 3 &&
+            recent3.every((r) => r.morningScore <= 4)
+          ) {
+            alerts.push(
+              "💡 資料提醒：最近連續 3 天晨起評分較低（≤ 4 分），可以留意一下近期的生活狀態與作息。",
+            );
+          }
+          if (
+            recent3.length === 3 &&
+            recent3.every(
+              (r) => r.sleepQuality === "差" || r.sleepQuality === "很差",
+            )
+          ) {
+            alerts.push(
+              "💡 資料提醒：最近幾天睡眠品質偏低，建議查看備註與生活紀錄，看看是否有共同因素。",
+            );
+          }
+
+          const count = this.records.filter((r) => !r.isDemo).length;
+          const milestones = [100, 300, 500, 1000];
+          const hitMilestone = milestones
+            .filter(
+              (m) => count >= m && this.userSettings.lastBackupMilestone < m,
+            )
+            .pop();
+          if (hitMilestone) {
+            alerts.push(
+              `📦 備份提醒：目前已累積 ${count} 筆正式紀錄，建議前往「資料管理」進行一次完整資料備份。 <button onclick="App.ackBackupMilestone(${hitMilestone})" class="underline ml-2 text-xs">我知道了</button>`,
+            );
+          }
+
+          container.innerHTML = alerts
+            .map(
+              (msg) => `
+          <div class="bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between">
+            <span>${msg}</span>
+          </div>
+        `,
+            )
+            .join("");
+        },
+
+        async ackBackupMilestone(m) {
+          this.userSettings.lastBackupMilestone = m;
+          await this.persistSettings();
+          this.renderGentleAlerts();
+        },
+
+        /* ================= 表格渲染、篩選、排序与快速內聯編輯 ================= */
+        onDateRangeChange() {
+          const val = document.getElementById("filterDateRange").value;
+          document
+            .getElementById("customDateRangeBox")
+            .classList.toggle("hidden", val !== "custom");
+          this.applyFilters();
+        },
+
+        resetFilters() {
+          document.getElementById("filterKeyword").value = "";
+          document.getElementById("filterDateRange").value = "all";
+          document.getElementById("filterCondition").value = "all";
+          document.getElementById("filterSort").value = "date_desc";
+          document.getElementById("customDateRangeBox").classList.add("hidden");
+          this.applyFilters();
+        },
+
+        applyFilters() {
+          const kw = (document.getElementById("filterKeyword")?.value || "")
+            .trim()
+            .toLowerCase();
+          const range =
+            document.getElementById("filterDateRange")?.value || "all";
+          const cond =
+            document.getElementById("filterCondition")?.value || "all";
+          const sort =
+            document.getElementById("filterSort")?.value || "date_desc";
+          const today = this.getTodayISO();
+
+          let list = [...this.records];
+
+          // 日期範圍篩選
+          if (range !== "all") {
+            const [ty, tm, td] = today.split("-").map(Number);
+            if (range === "today") {
+              list = list.filter((r) => r.date === today);
+            } else if (range === "7d" || range === "30d" || range === "90d") {
+              const days = parseInt(range);
+              const cutoff = new Date(ty, tm - 1, td - (days - 1));
+              const cutoffISO = this.dateToISO(cutoff);
+              list = list.filter((r) => r.date >= cutoffISO && r.date <= today);
+            } else if (range === "thisMonth") {
+              list = list.filter((r) => r.date.startsWith(today.slice(0, 7)));
+            } else if (range === "lastMonth") {
+              const lastM = new Date(ty, tm - 2, 1);
+              const prefix = this.dateToISO(lastM).slice(0, 7);
+              list = list.filter((r) => r.date.startsWith(prefix));
+            } else if (range === "thisYear") {
+              list = list.filter((r) => r.date.startsWith(today.slice(0, 4)));
+            } else if (range === "custom") {
+              const s = document.getElementById("filterStartDate").value;
+              const e = document.getElementById("filterEndDate").value;
+              if (s) list = list.filter((r) => r.date >= s);
+              if (e) list = list.filter((r) => r.date <= e);
+            }
+          }
+
+          // 條件篩選
+          if (cond !== "all") {
+            if (cond.startsWith("q_")) {
+              const q = cond.slice(2);
+              list = list.filter((r) => r.sleepQuality === q);
+            } else if (cond === "m_le4")
+              list = list.filter((r) => r.morningScore <= 4);
+            else if (cond === "m_ge8")
+              list = list.filter((r) => r.morningScore >= 8);
+            else if (cond === "b_le4")
+              list = list.filter((r) => r.bedtimeScore <= 4);
+            else if (cond === "b_ge8")
+              list = list.filter((r) => r.bedtimeScore >= 8);
+          }
+
+          // 關鍵字搜尋（備註 + 自訂欄位內容）
+          if (kw) {
+            list = list.filter((r) => {
+              if ((r.note || "").toLowerCase().includes(kw)) return true;
+              if (r.customValues) {
+                for (const v of Object.values(r.customValues)) {
+                  if (
+                    v !== null &&
+                    v !== undefined &&
+                    String(v).toLowerCase().includes(kw)
+                  )
+                    return true;
+                }
+              }
+              return false;
+            });
+          }
+
+          // 排序
+          list.sort((a, b) => {
+            if (sort === "date_desc") return b.date.localeCompare(a.date);
+            if (sort === "date_asc") return a.date.localeCompare(b.date);
+            if (sort === "morning_desc")
+              return (
+                b.morningScore - a.morningScore || b.date.localeCompare(a.date)
+              );
+            if (sort === "morning_asc")
+              return (
+                a.morningScore - b.morningScore || b.date.localeCompare(a.date)
+              );
+            if (sort === "bed_desc")
+              return (
+                b.bedtimeScore - a.bedtimeScore || b.date.localeCompare(a.date)
+              );
+            if (sort === "bed_asc")
+              return (
+                a.bedtimeScore - b.bedtimeScore || b.date.localeCompare(a.date)
+              );
+            if (sort === "quality_desc")
+              return (
+                (QUALITY_WEIGHT[b.sleepQuality] || 0) -
+                (QUALITY_WEIGHT[a.sleepQuality] || 0)
+              );
+            if (sort === "quality_asc")
+              return (
+                (QUALITY_WEIGHT[a.sleepQuality] || 0) -
+                (QUALITY_WEIGHT[b.sleepQuality] || 0)
+              );
+            return 0;
+          });
+
+          this.filteredRecords = list;
+          this.currentPage = 1;
+          this.renderRecordsTableAndCards();
+        },
+
+        renderQualityBadgeHTML(q) {
+          const styles = {
+            好: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border-emerald-300",
+            普通: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-200 border-sky-300",
+            差: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300",
+            很差: "bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border-rose-300",
+          };
+          const icons = { 好: "✓", 普通: "○", 差: "△", 很差: "✕" };
+          return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${styles[q] || ""}">${this.escapeHTML(q)} <span>${icons[q] || ""}</span></span>`;
+        },
+
+        renderScoreBadgeHTML(score) {
+          const s = Number(score);
+          let cls =
+            "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200";
+          if (s >= 8)
+            cls =
+              "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-bold";
+          else if (s <= 4)
+            cls =
+              "bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 font-bold";
+          return `<span class="inline-block min-w-[28px] text-center px-1.5 py-0.5 rounded ${cls}">${s}</span>`;
+        },
+
+        getColumnLabel(colKey) {
+          const baseLabels = {
+            date: "日期",
+            weekday: "星期",
+            morningScore: "晨起",
+            bedtimeScore: "睡前",
+            sleepQuality: "睡眠品質",
+            note: "備註",
+          };
+          if (baseLabels[colKey]) return baseLabels[colKey];
+          const cf = this.customFields.find((f) => f.id === colKey);
+          return cf ? (cf.unit ? `${cf.name} (${cf.unit})` : cf.name) : colKey;
+        },
+
+        renderRecordsTableAndCards() {
+          const total = this.filteredRecords.length;
+          document.getElementById("filteredCountLabel").textContent =
+            `共 ${total} 筆紀錄`;
+
+          const totalPages = Math.max(1, Math.ceil(total / this.pageSize));
+          if (this.currentPage > totalPages) this.currentPage = totalPages;
+          const start = (this.currentPage - 1) * this.pageSize;
+          const pageItems = this.filteredRecords.slice(
+            start,
+            start + this.pageSize,
+          );
+
+          document.getElementById("pageIndicator").textContent =
+            `第 ${this.currentPage} / ${totalPages} 頁`;
+          document.getElementById("btnPrevPage").disabled =
+            this.currentPage <= 1;
+          document.getElementById("btnNextPage").disabled =
+            this.currentPage >= totalPages;
+
+          const activeCols = this.fieldOrder.filter(
+            (k) => this.displaySettings.visibleColumns[k] !== false,
+          );
+          const thead = document.getElementById("recordTableHead");
+          const tbody = document.getElementById("recordTableBody");
+
+          thead.innerHTML = `<tr>
+          ${activeCols
+            .map((k) => {
+              const sticky =
+                k === "date" ? "sticky-col bg-slate-100 dark:bg-slate-700" : "";
+              const wStyle =
+                k === "note"
+                  ? `style="min-width:${this.displaySettings.noteWidth || "220px"};max-width:${this.displaySettings.noteWidth || "220px"}"`
+                  : 'class="whitespace-nowrap px-3 py-2.5"';
+              return `<th class="${sticky} px-3 py-2.5 font-semibold" ${wStyle}>${this.escapeHTML(this.getColumnLabel(k))}</th>`;
+            })
+            .join("")}
+          <th class="px-3 py-2.5 text-right whitespace-nowrap">操作</th>
+        </tr>`;
+
+          if (pageItems.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${activeCols.length + 1}" class="px-4 py-10 text-center text-slate-400">目前沒有符合條件的紀錄。點擊上方「＋新增今日紀錄」開始記錄吧！</td></tr>`;
+          } else {
+            tbody.innerHTML = pageItems
+              .map((rec) => {
+                return `<tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors">
+              ${activeCols.map((k) => this.renderTableCell(rec, k)).join("")}
+              <td class="px-3 py-2 text-right whitespace-nowrap space-x-1">
+                <button onclick="App.openRecordModal('${rec.id}', false)" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">✏️ 編輯</button>
+                <button onclick="App.deleteRecord('${rec.id}')" class="px-2 py-1 text-xs rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30">🗑 刪除</button>
+              </td>
+            </tr>`;
+              })
+              .join("");
+          }
+
+          // 手機版卡片渲染
+          const cardWrapper = document.getElementById("cardViewWrapper");
+          cardWrapper.innerHTML = pageItems
+            .map(
+              (rec) => `
+          <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="font-bold text-sm">${this.formatDateDisplay(rec.date)}（${this.getWeekdayChar(rec.date)}）</div>
+              <div>${this.renderQualityBadgeHTML(rec.sleepQuality)}</div>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-300">
+              <span>🌅 晨起：<strong>${rec.morningScore}</strong></span>
+              <span>🌙 睡前：<strong>${rec.bedtimeScore}</strong></span>
+            </div>
+            ${rec.note ? `<div class="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700/40 p-2 rounded">${this.escapeHTML(rec.note)}</div>` : ""}
+            <div class="flex justify-end gap-2 pt-1">
+              <button onclick="App.openRecordModal('${rec.id}', false)" class="px-3 py-1 text-xs rounded bg-slate-100 dark:bg-slate-700">✏️ 編輯</button>
+              <button onclick="App.deleteRecord('${rec.id}')" class="px-3 py-1 text-xs rounded text-rose-600 border border-rose-200">🗑 刪除</button>
+            </div>
+          </div>
+        `,
+            )
+            .join("");
+        },
+
+        renderTableCell(rec, colKey) {
+          if (colKey === "date") {
+            return `<td class="sticky-col bg-white dark:bg-slate-800 px-3 py-2.5 font-medium whitespace-nowrap">${this.formatDateDisplay(rec.date)} ${rec.isDemo ? '<span class="text-[10px] px-1 rounded bg-amber-100 text-amber-800">Demo</span>' : ""}</td>`;
+          }
+          if (colKey === "weekday") {
+            return `<td class="px-3 py-2.5 text-center whitespace-nowrap">${this.getWeekdayChar(rec.date)}</td>`;
+          }
+          if (colKey === "morningScore") {
+            return `<td class="px-3 py-2.5 whitespace-nowrap cursor-pointer" title="點擊快速修改晨起分數" onclick="App.inlineEditScore('${rec.id}', 'morningScore', this)">${this.renderScoreBadgeHTML(rec.morningScore)}</td>`;
+          }
+          if (colKey === "bedtimeScore") {
+            return `<td class="px-3 py-2.5 whitespace-nowrap cursor-pointer" title="點擊快速修改睡前分數" onclick="App.inlineEditScore('${rec.id}', 'bedtimeScore', this)">${this.renderScoreBadgeHTML(rec.bedtimeScore)}</td>`;
+          }
+          if (colKey === "sleepQuality") {
+            return `<td class="px-3 py-2.5 whitespace-nowrap cursor-pointer" title="點擊快速修改睡眠品質" onclick="App.inlineEditQuality('${rec.id}', this)">${this.renderQualityBadgeHTML(rec.sleepQuality)}</td>`;
+          }
+          if (colKey === "note") {
+            const w = this.displaySettings.noteWidth || "220px";
+            return `<td class="px-3 py-2.5 text-slate-600 dark:text-slate-300 break-words" style="min-width:${w};max-width:${w}">${this.escapeHTML(rec.note || "")}</td>`;
+          }
+
+          // 自訂欄位
+          const cf = this.customFields.find((f) => f.id === colKey);
+          const val = rec.customValues ? rec.customValues[colKey] : undefined;
+          if (val === undefined || val === null || val === "") {
+            return `<td class="px-3 py-2.5 text-slate-300 dark:text-slate-600 whitespace-nowrap">-</td>`;
+          }
+          if (cf?.type === "boolean") {
+            const isYes = val === true || val === "是" || val === "true";
+            return `<td class="px-3 py-2.5 whitespace-nowrap">${isYes ? '<span class="text-emerald-600 font-medium">是 ✓</span>' : '<span class="text-slate-400">否</span>'}</td>`;
+          }
+          if (cf?.type === "unit") {
+            return `<td class="px-3 py-2.5 whitespace-nowrap">${this.escapeHTML(val)} <span class="text-xs text-slate-400">${this.escapeHTML(cf.unit || "")}</span></td>`;
+          }
+          if (Array.isArray(val)) {
+            return `<td class="px-3 py-2.5 whitespace-nowrap">${this.escapeHTML(val.join(", "))}</td>`;
+          }
+          return `<td class="px-3 py-2.5 whitespace-nowrap">${this.escapeHTML(val)}</td>`;
+        },
+
+        inlineEditScore(recId, field, tdEl) {
+          if (tdEl.querySelector("select")) return;
+          const rec = this.records.find((r) => r.id === recId);
+          if (!rec) return;
+          const current = rec[field];
+          const select = document.createElement("select");
+          select.className =
+            "px-1.5 py-0.5 text-xs rounded border border-blue-500 bg-white dark:bg-slate-800";
+          for (let i = 1; i <= 10; i++) {
+            const opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = i;
+            if (i === Number(current)) opt.selected = true;
+            select.appendChild(opt);
+          }
+          const commit = async () => {
+            const newVal = Number(select.value);
+            if (newVal >= 1 && newVal <= 10 && newVal !== rec[field]) {
+              rec[field] = newVal;
+              rec.updatedAt = new Date().toISOString();
+              await DB.put("records", rec);
+              this.showToast("已更新分數");
+            }
+            this.renderAll();
+          };
+          select.onchange = commit;
+          select.onblur = () => this.renderRecordsTableAndCards();
+          tdEl.innerHTML = "";
+          tdEl.appendChild(select);
+          select.focus();
+        },
+
+        inlineEditQuality(recId, tdEl) {
+          if (tdEl.querySelector("select")) return;
+          const rec = this.records.find((r) => r.id === recId);
+          if (!rec) return;
+          const select = document.createElement("select");
+          select.className =
+            "px-1.5 py-0.5 text-xs rounded border border-blue-500 bg-white dark:bg-slate-800";
+          QUALITIES.forEach((q) => {
+            const opt = document.createElement("option");
+            opt.value = q;
+            opt.textContent = q;
+            if (q === rec.sleepQuality) opt.selected = true;
+            select.appendChild(opt);
+          });
+          const commit = async () => {
+            const newVal = select.value;
+            if (QUALITIES.includes(newVal) && newVal !== rec.sleepQuality) {
+              rec.sleepQuality = newVal;
+              rec.updatedAt = new Date().toISOString();
+              await DB.put("records", rec);
+              this.showToast("已更新睡眠品質");
+            }
+            this.renderAll();
+          };
+          select.onchange = commit;
+          select.onblur = () => this.renderRecordsTableAndCards();
+          tdEl.innerHTML = "";
+          tdEl.appendChild(select);
+          select.focus();
+        },
+
+        changePageSize(size) {
+          this.pageSize = Number(size);
+          this.currentPage = 1;
+          this.renderRecordsTableAndCards();
+        },
+
+        changePage(delta) {
+          this.currentPage += delta;
+          this.renderRecordsTableAndCards();
+        },
+
+        toggleMobileViewMode() {
+          this.displaySettings.mobileCardMode =
+            !this.displaySettings.mobileCardMode;
+          document
+            .getElementById("tableViewWrapper")
+            .classList.toggle("hidden", this.displaySettings.mobileCardMode);
+          document
+            .getElementById("cardViewWrapper")
+            .classList.toggle("hidden", !this.displaySettings.mobileCardMode);
+        },
+
+        toggleColumnSelector() {
+          document
+            .getElementById("columnSelectorPopup")
+            .classList.toggle("hidden");
+        },
+
+        renderColumnSelector() {
+          const box = document.getElementById("columnCheckboxes");
+          box.innerHTML = this.fieldOrder
+            .map((colKey) => {
+              const checked =
+                this.displaySettings.visibleColumns[colKey] !== false
+                  ? "checked"
+                  : "";
+              const disabled = colKey === "date" ? "disabled" : "";
+              return `<label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" ${checked} ${disabled} onchange="App.toggleColumnVisibility('${colKey}', this.checked)" class="rounded">
+            <span>${this.escapeHTML(this.getColumnLabel(colKey))}</span>
+          </label>`;
+            })
+            .join("");
+        },
+
+        async toggleColumnVisibility(colKey, isVisible) {
+          this.displaySettings.visibleColumns[colKey] = isVisible;
+          const cf = this.customFields.find((f) => f.id === colKey);
+          if (cf) {
+            cf.visible = isVisible;
+            await DB.put("customFields", cf);
+          }
+          await this.persistSettings();
+          this.renderRecordsTableAndCards();
+        },
+
+        async changeNoteWidth(w) {
+          this.displaySettings.noteWidth = w;
+          await this.persistSettings();
+          this.renderRecordsTableAndCards();
+        },
+
+        /* ================= 新增／編輯紀錄表單與快速紀錄模式 ================= */
+        openTodayForm(quickMode = false) {
+          const today = this.getTodayISO();
+          const existing = this.records.find((r) => r.date === today);
+          if (existing) {
+            this.openRecordModal(existing.id, quickMode);
+          } else {
+            this.openRecordModal(null, quickMode, today);
+          }
+        },
+
+        openRecordModal(recordId = null, quickMode = false, presetDate = null) {
+          this.isQuickMode = quickMode;
+          document
+            .getElementById("quickModeBadge")
+            .classList.toggle("hidden", !quickMode);
+          const rec = recordId
+            ? this.records.find((r) => r.id === recordId)
+            : null;
+
+          document.getElementById("formRecordId").value = rec ? rec.id : "";
+          document.getElementById("recordModalTitle").textContent = rec
+            ? `編輯紀錄 (${this.formatDateDisplay(rec.date)})`
+            : "新增每日紀錄";
+          document
+            .getElementById("btnDeleteInModal")
+            .classList.toggle("hidden", !rec);
+
+          const dateVal = rec ? rec.date : presetDate || this.getTodayISO();
+          document.getElementById("formDate").value = dateVal;
+          document.getElementById("formWeekday").value =
+            this.getWeekdayChar(dateVal);
+
+          this.formMorningScore = rec ? Number(rec.morningScore) : 7;
+          this.formBedtimeScore = rec ? Number(rec.bedtimeScore) : 7;
+          this.formSleepQuality = rec ? rec.sleepQuality : "好";
+          document.getElementById("formNote").value = rec ? rec.note || "" : "";
+
+          this.renderScoreButtons(
+            "morningScoreBtns",
+            this.formMorningScore,
+            (val) => {
+              this.formMorningScore = val;
+              this.renderScoreButtons("morningScoreBtns", val, null, "blue");
+              document.getElementById("labelMorningScore").textContent =
+                `${val} 分`;
+            },
+            "blue",
+          );
+          document.getElementById("labelMorningScore").textContent =
+            `${this.formMorningScore} 分`;
+
+          this.renderScoreButtons(
+            "bedtimeScoreBtns",
+            this.formBedtimeScore,
+            (val) => {
+              this.formBedtimeScore = val;
+              this.renderScoreButtons("bedtimeScoreBtns", val, null, "purple");
+              document.getElementById("labelBedtimeScore").textContent =
+                `${val} 分`;
+            },
+            "purple",
+          );
+          document.getElementById("labelBedtimeScore").textContent =
+            `${this.formBedtimeScore} 分`;
+
+          this.renderQualityButtons();
+          this.renderCustomFieldsInForm(rec ? rec.customValues : {});
+          this.checkDuplicateDateOnForm();
+
+          const customWrapper = document.getElementById(
+            "formCustomFieldsContainer",
+          );
+          customWrapper.classList.toggle(
+            "hidden",
+            quickMode || this.customFields.length === 0,
+          );
+          document
+            .getElementById("formCustomFieldsWrapper")
+            .classList.toggle("hidden", this.customFields.length === 0);
+
+          document.getElementById("recordModal").classList.remove("hidden");
+        },
+
+        closeRecordModal() {
+          document.getElementById("recordModal").classList.add("hidden");
+        },
+
+        toggleCustomFieldsInForm() {
+          document
+            .getElementById("formCustomFieldsContainer")
+            .classList.toggle("hidden");
+        },
+
+        onFormDateChange() {
+          const d = document.getElementById("formDate").value;
+          document.getElementById("formWeekday").value = this.getWeekdayChar(d);
+          this.checkDuplicateDateOnForm();
+        },
+
+        checkDuplicateDateOnForm() {
+          const d = document.getElementById("formDate").value;
+          const id = document.getElementById("formRecordId").value;
+          const dup = this.records.find((r) => r.date === d && r.id !== id);
+          const notice = document.getElementById("duplicateDateNotice");
+          if (dup) {
+            notice.classList.remove("hidden");
+            notice.innerHTML = `⚠️ 提醒：<strong>${this.formatDateDisplay(d)}</strong> 已經有一筆紀錄。若直接儲存將會更新該日的紀錄，或點此 <button type="button" onclick="App.openRecordModal('${dup.id}', App.isQuickMode)" class="underline font-bold">直接載入該日現有紀錄編輯</button>。`;
+          } else {
+            notice.classList.add("hidden");
+          }
+        },
+
+        renderScoreButtons(
+          containerId,
+          selectedVal,
+          onClickHandler,
+          colorTheme = "blue",
+        ) {
+          const container = document.getElementById(containerId);
+          if (onClickHandler) container._handler = onClickHandler;
+          const handler = container._handler;
+          container.innerHTML = "";
+          for (let i = 1; i <= 10; i++) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            const isSel = i === Number(selectedVal);
+            const activeCls =
+              colorTheme === "blue"
+                ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                : "bg-purple-600 text-white border-purple-600 font-bold shadow-sm";
+            btn.className = `touch-btn py-2 rounded-lg border text-sm transition ${
+              isSel
+                ? activeCls
+                : "border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            }`;
+            btn.textContent = i;
+            btn.onclick = () => handler && handler(i);
+            container.appendChild(btn);
+          }
+        },
+
+        renderQualityButtons() {
+          const container = document.getElementById("sleepQualityBtns");
+          container.innerHTML = "";
+          const icons = { 很差: "✕", 差: "△", 普通: "○", 好: "✓" };
+          QUALITIES.forEach((q) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            const isSel = q === this.formSleepQuality;
+            btn.className = `touch-btn py-2.5 px-3 rounded-lg border text-sm font-medium transition flex items-center justify-center gap-1 ${
+              isSel
+                ? "bg-emerald-600 text-white border-emerald-600 font-bold shadow-sm"
+                : "border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+            }`;
+            btn.innerHTML = `<span>${q}</span><span>${icons[q]}</span>`;
+            btn.onclick = () => {
+              this.formSleepQuality = q;
+              this.renderQualityButtons();
+            };
+            container.appendChild(btn);
+          });
+        },
+
+        renderCustomFieldsInForm(values = {}) {
+          const container = document.getElementById(
+            "formCustomFieldsContainer",
+          );
+          container.innerHTML = this.customFields
+            .map((cf) => {
+              const val =
+                values && values[cf.id] !== undefined ? values[cf.id] : "";
+              const reqAttr =
+                !this.isQuickMode && cf.required ? "required" : "";
+              const label = `${this.escapeHTML(cf.name)}${cf.unit ? ` (${this.escapeHTML(cf.unit)})` : ""}${cf.required ? " *" : ""}`;
+              let inputHTML = "";
+
+              if (cf.type === "text") {
+                inputHTML = `<input type="text" data-cfid="${cf.id}" value="${this.escapeHTML(val)}" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm">`;
+              } else if (cf.type === "textarea") {
+                inputHTML = `<textarea data-cfid="${cf.id}" rows="2" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm">${this.escapeHTML(val)}</textarea>`;
+              } else if (cf.type === "integer") {
+                inputHTML = `<input type="number" step="1" data-cfid="${cf.id}" value="${this.escapeHTML(val)}" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm">`;
+              } else if (cf.type === "decimal" || cf.type === "unit") {
+                inputHTML = `<input type="number" step="any" data-cfid="${cf.id}" value="${this.escapeHTML(val)}" ${reqAttr} placeholder="${this.escapeHTML(cf.unit || "")}" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm">`;
+              } else if (cf.type === "score10") {
+                inputHTML = `<select data-cfid="${cf.id}" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
+              <option value="">未選擇</option>
+              ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => `<option value="${n}" ${Number(val) === n ? "selected" : ""}>${n} 分</option>`).join("")}
+            </select>`;
+              } else if (cf.type === "boolean") {
+                inputHTML = `<select data-cfid="${cf.id}" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
+              <option value="">未選擇</option>
+              <option value="是" ${val === "是" || val === true ? "selected" : ""}>是</option>
+              <option value="否" ${val === "否" || val === false ? "selected" : ""}>否</option>
+            </select>`;
+              } else if (cf.type === "date") {
+                inputHTML = `<input type="date" data-cfid="${cf.id}" value="${this.escapeHTML(val)}" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm">`;
+              } else if (cf.type === "time") {
+                inputHTML = `<input type="time" data-cfid="${cf.id}" value="${this.escapeHTML(val)}" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm">`;
+              } else if (cf.type === "select") {
+                const opts = Array.isArray(cf.options) ? cf.options : [];
+                inputHTML = `<select data-cfid="${cf.id}" ${reqAttr} class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
+              <option value="">請選擇</option>
+              ${opts.map((o) => `<option value="${this.escapeHTML(o)}" ${val === o ? "selected" : ""}>${this.escapeHTML(o)}</option>`).join("")}
+            </select>`;
+              } else if (cf.type === "multiselect") {
+                const opts = Array.isArray(cf.options) ? cf.options : [];
+                const selArr = Array.isArray(val)
+                  ? val
+                  : val
+                    ? String(val)
+                        .split(",")
+                        .map((s) => s.trim())
+                    : [];
+                inputHTML = `<div class="flex flex-wrap gap-2 pt-1" data-cfmulti="${cf.id}">
+              ${opts
+                .map(
+                  (
+                    o,
+                  ) => `<label class="inline-flex items-center gap-1 text-xs border border-slate-300 dark:border-slate-600 px-2 py-1 rounded">
+                <input type="checkbox" value="${this.escapeHTML(o)}" ${selArr.includes(o) ? "checked" : ""}>
+                <span>${this.escapeHTML(o)}</span>
+              </label>`,
+                )
+                .join("")}
+            </div>`;
+              } else if (cf.type === "slider") {
+                const sVal = val !== "" ? Number(val) : 50;
+                inputHTML = `<div class="flex items-center gap-2">
+              <input type="range" min="0" max="100" data-cfid="${cf.id}" value="${sVal}" oninput="this.nextElementSibling.textContent=this.value" class="flex-1">
+              <span class="text-xs font-bold w-8 text-right">${sVal}</span>
+            </div>`;
+              }
+
+              return `<div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">${label}</label>
+            ${inputHTML}
+          </div>`;
+            })
+            .join("");
+        },
+
+        async saveRecordForm(e) {
+          e.preventDefault();
+          const date = document.getElementById("formDate").value;
+          if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return this.showToast("日期格式錯誤，請重新選擇有效日期", "error");
+          }
+          const mScore = Number(this.formMorningScore);
+          const bScore = Number(this.formBedtimeScore);
+          if (
+            isNaN(mScore) ||
+            mScore < 1 ||
+            mScore > 10 ||
+            isNaN(bScore) ||
+            bScore < 1 ||
+            bScore > 10
+          ) {
+            return this.showToast("晨起與睡前分數必須介於 1～10 之間", "error");
+          }
+          if (!QUALITIES.includes(this.formSleepQuality)) {
+            return this.showToast("請選擇有效的睡眠品質", "error");
+          }
+
+          const formId = document.getElementById("formRecordId").value;
+          const existingByDate = this.records.find((r) => r.date === date);
+          const targetRecord = formId
+            ? this.records.find((r) => r.id === formId)
+            : existingByDate;
+
+          const customValues = targetRecord?.customValues
+            ? { ...targetRecord.customValues }
+            : {};
+          if (
+            !document
+              .getElementById("formCustomFieldsContainer")
+              .classList.contains("hidden")
+          ) {
+            document
+              .querySelectorAll("#formCustomFieldsContainer [data-cfid]")
+              .forEach((el) => {
+                const cfId = el.dataset.cfid;
+                const cf = this.customFields.find((f) => f.id === cfId);
+                let v = el.value;
+                if (
+                  v !== "" &&
+                  (cf?.type === "integer" ||
+                    cf?.type === "decimal" ||
+                    cf?.type === "unit" ||
+                    cf?.type === "score10" ||
+                    cf?.type === "slider")
+                ) {
+                  v = Number(v);
+                }
+                customValues[cfId] = v;
+              });
+            document
+              .querySelectorAll("#formCustomFieldsContainer [data-cfmulti]")
+              .forEach((box) => {
+                const cfId = box.dataset.cfmulti;
+                const checked = Array.from(
+                  box.querySelectorAll('input[type="checkbox"]:checked'),
+                ).map((c) => c.value);
+                customValues[cfId] = checked;
+              });
+          }
+
+          const nowISO = new Date().toISOString();
+          const newRec = {
+            id: existingByDate
+              ? existingByDate.id
+              : formId ||
+                `rec_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            date,
+            morningScore: mScore,
+            bedtimeScore: bScore,
+            sleepQuality: this.formSleepQuality,
+            note: document.getElementById("formNote").value.trim(),
+            customValues,
+            isDemo: false,
+            createdAt: targetRecord?.createdAt || nowISO,
+            updatedAt: nowISO,
+          };
+
+          try {
+            await DB.put("records", newRec);
+            await this.loadAllData();
+            this.closeRecordModal();
+            this.renderAll();
+            this.showToast(`已儲存 ${this.formatDateDisplay(date)} 的紀錄 ✓`);
+          } catch (err) {
+            this.showToast("儲存失敗，請確認日期是否衝突或重試", "error");
+          }
+        },
+
+        async deleteRecord(id) {
+          const rec = this.records.find((r) => r.id === id);
+          if (!rec) return;
+          this.lastDeletedRecord = { ...rec };
+          await DB.delete("records", id);
+          await this.loadAllData();
+          this.renderAll();
+          this.showUndoToast(
+            `已刪除 ${this.formatDateDisplay(rec.date)} 的紀錄`,
+          );
+        },
+
+        deleteFromModal() {
+          const id = document.getElementById("formRecordId").value;
+          if (!id) return;
+          this.closeRecordModal();
+          this.deleteRecord(id);
+        },
+
+        async undoDeleteRecord() {
+          if (!this.lastDeletedRecord) return;
+          const rec = this.lastDeletedRecord;
+          this.lastDeletedRecord = null;
+          await DB.put("records", rec);
+          await this.loadAllData();
+          this.renderAll();
+          this.showToast(`已復原 ${this.formatDateDisplay(rec.date)} 的紀錄 ✓`);
+        },
+
+        /* ================= 自訂欄位 CRUD、排序與刪除保留歷史資料 ================= */
+        openCustomFieldModal(cfId = null) {
+          const cf = cfId ? this.customFields.find((f) => f.id === cfId) : null;
+          document.getElementById("cfId").value = cf ? cf.id : "";
+          document.getElementById("customFieldModalTitle").textContent = cf
+            ? "編輯自訂欄位"
+            : "新增自訂欄位";
+          document.getElementById("cfName").value = cf ? cf.name : "";
+          document.getElementById("cfType").value = cf ? cf.type : "text";
+          document.getElementById("cfUnit").value = cf ? cf.unit || "" : "";
+          document.getElementById("cfOptions").value =
+            cf && Array.isArray(cf.options) ? cf.options.join(", ") : "";
+          document.getElementById("cfRequired").checked = cf
+            ? !!cf.required
+            : false;
+          document.getElementById("cfVisible").checked = cf
+            ? cf.visible !== false
+            : true;
+          this.onCfTypeChange();
+          document
+            .getElementById("customFieldModal")
+            .classList.remove("hidden");
+        },
+
+        closeCustomFieldModal() {
+          document.getElementById("customFieldModal").classList.add("hidden");
+        },
+
+        onCfTypeChange() {
+          const t = document.getElementById("cfType").value;
+          document
+            .getElementById("cfUnitBox")
+            .classList.toggle("hidden", t !== "unit");
+          document
+            .getElementById("cfOptionsBox")
+            .classList.toggle("hidden", t !== "select" && t !== "multiselect");
+        },
+
+        async saveCustomFieldForm(e) {
+          e.preventDefault();
+          const id =
+            document.getElementById("cfId").value || `cf_${Date.now()}`;
+          const name = document.getElementById("cfName").value.trim();
+          const type = document.getElementById("cfType").value;
+          const unit = document.getElementById("cfUnit").value.trim();
+          const rawOpts = document.getElementById("cfOptions").value;
+          const options = rawOpts
+            .split(/[,，\n]/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const required = document.getElementById("cfRequired").checked;
+          const visible = document.getElementById("cfVisible").checked;
+
+          if (!name) return this.showToast("請輸入欄位名稱", "error");
+          if (
+            (type === "select" || type === "multiselect") &&
+            options.length === 0
+          ) {
+            return this.showToast("請至少輸入一個選項", "error");
+          }
+
+          const existing = this.customFields.find((f) => f.id === id);
+          const now = new Date().toISOString();
+          const fieldObj = {
+            id,
+            name,
+            type,
+            options,
+            unit: type === "unit" ? unit : "",
+            required,
+            visible,
+            order: existing ? existing.order : this.customFields.length,
+            createdAt: existing ? existing.createdAt : now,
+            updatedAt: now,
+          };
+
+          await DB.put("customFields", fieldObj);
+          this.displaySettings.visibleColumns[id] = visible;
+          await this.loadAllData();
+          await this.persistSettings();
+          this.closeCustomFieldModal();
+          this.renderAll();
+          this.showToast(`已儲存欄位「${name}」`);
+        },
+
+        async quickAddPresetField(
+          name,
+          type,
+          options = [],
+          unit = "",
+          visible = true,
+        ) {
+          if (this.customFields.some((f) => f.name === name)) {
+            return this.showToast(`已經有「${name}」欄位囉！`, "error");
+          }
+          const id = `cf_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+          const now = new Date().toISOString();
+          await DB.put("customFields", {
+            id,
+            name,
+            type,
+            options,
+            unit,
+            required: false,
+            visible,
+            order: this.customFields.length,
+            createdAt: now,
+            updatedAt: now,
+          });
+          this.displaySettings.visibleColumns[id] = visible;
+          await this.loadAllData();
+          await this.persistSettings();
+          this.renderAll();
+          this.showToast(`已快速新增「${name}」欄位 ✓`);
+        },
+
+        promptDeleteField(cfId) {
+          const cf = this.customFields.find((f) => f.id === cfId);
+          if (!cf) return;
+          this.pendingDeleteFieldId = cfId;
+          document.getElementById("deleteFieldTitle").textContent =
+            `刪除「${cf.name}」欄位？`;
+          document
+            .getElementById("deleteFieldModal")
+            .classList.remove("hidden");
+        },
+
+        closeDeleteFieldModal() {
+          this.pendingDeleteFieldId = null;
+          document.getElementById("deleteFieldModal").classList.add("hidden");
+        },
+
+        async confirmDeleteField(keepHistory) {
+          const cfId = this.pendingDeleteFieldId;
+          if (!cfId) return;
+          await DB.delete("customFields", cfId);
+          delete this.displaySettings.visibleColumns[cfId];
+          this.fieldOrder = this.fieldOrder.filter((k) => k !== cfId);
+
+          if (!keepHistory) {
+            for (const rec of this.records) {
+              if (rec.customValues && rec.customValues[cfId] !== undefined) {
+                delete rec.customValues[cfId];
+                await DB.put("records", rec);
+              }
+            }
+          }
+          await this.persistSettings();
+          await this.loadAllData();
+          this.closeDeleteFieldModal();
+          this.renderAll();
+          this.showToast(
+            keepHistory
+              ? "已刪除欄位並保留歷史資料"
+              : "已刪除欄位及相關歷史資料",
+          );
+        },
+
+        renderCustomFieldsPage() {
+          const listEl = document.getElementById("customFieldsList");
+          const typeNames = {
+            text: "文字",
+            textarea: "長文字",
+            integer: "整數",
+            decimal: "小數",
+            score10: "1~10 分數",
+            boolean: "是／否",
+            date: "日期",
+            time: "時間",
+            select: "下拉選單",
+            multiselect: "多選",
+            slider: "滑桿",
+            unit: "數值＋單位",
+          };
+          if (this.customFields.length === 0) {
+            listEl.innerHTML = `<div class="py-8 text-center text-slate-400">尚未建立自訂欄位，可點擊上方「＋新增欄位」或常用範本快速建立。</div>`;
+          } else {
+            listEl.innerHTML = this.customFields
+              .map(
+                (cf) => `
+            <div class="py-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="font-bold">${this.escapeHTML(cf.name)}</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 ml-1">${typeNames[cf.type] || cf.type}${cf.unit ? ` (${this.escapeHTML(cf.unit)})` : ""}</span>
+                ${cf.required ? '<span class="text-xs text-rose-500 ml-1">必填</span>' : ""}
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="App.toggleColumnVisibility('${cf.id}', ${this.displaySettings.visibleColumns[cf.id] === false})" class="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600">
+                  ${this.displaySettings.visibleColumns[cf.id] !== false ? "👁️ 首頁顯示中" : "🙈 已隱藏"}
+                </button>
+                <button onclick="App.openCustomFieldModal('${cf.id}')" class="px-2.5 py-1 text-xs rounded bg-slate-100 dark:bg-slate-700">✏️ 編輯</button>
+                <button onclick="App.promptDeleteField('${cf.id}')" class="px-2.5 py-1 text-xs rounded text-rose-600 border border-rose-200">🗑 刪除</button>
+              </div>
+            </div>
+          `,
+              )
+              .join("");
+          }
+
+          // 欄位排序列表
+          const orderUl = document.getElementById("fieldOrderList");
+          orderUl.innerHTML = this.fieldOrder
+            .map(
+              (key, idx) => `
+          <li draggable="true" ondragstart="App.onDragStartField(event, ${idx})" ondragover="event.preventDefault()" ondrop="App.onDropField(event, ${idx})"
+              class="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 cursor-move">
+            <span class="flex items-center gap-2"><span class="text-slate-400">☰</span> ${this.escapeHTML(this.getColumnLabel(key))}</span>
+            <div class="space-x-1">
+              <button onclick="App.moveFieldOrder(${idx}, -1)" ${idx === 0 ? "disabled" : ""} class="px-1.5 py-0.5 text-xs rounded border disabled:opacity-30">↑</button>
+              <button onclick="App.moveFieldOrder(${idx}, 1)" ${idx === this.fieldOrder.length - 1 ? "disabled" : ""} class="px-1.5 py-0.5 text-xs rounded border disabled:opacity-30">↓</button>
+            </div>
+          </li>
+        `,
+            )
+            .join("");
+        },
+
+        dragSrcIndex: null,
+        onDragStartField(e, idx) {
+          this.dragSrcIndex = idx;
+        },
+        async onDropField(e, targetIdx) {
+          if (this.dragSrcIndex === null || this.dragSrcIndex === targetIdx)
+            return;
+          const item = this.fieldOrder.splice(this.dragSrcIndex, 1)[0];
+          this.fieldOrder.splice(targetIdx, 0, item);
+          this.dragSrcIndex = null;
+          await this.persistSettings();
+          this.renderAll();
+        },
+
+        async moveFieldOrder(idx, dir) {
+          const target = idx + dir;
+          if (target < 0 || target >= this.fieldOrder.length) return;
+          const temp = this.fieldOrder[idx];
+          this.fieldOrder[idx] = this.fieldOrder[target];
+          this.fieldOrder[target] = temp;
+          await this.persistSettings();
+          this.renderAll();
+        },
+
+        /* ================= 日曆檢視 ================= */
+        changeCalendarMonth(delta) {
+          this.calendarMonth += delta;
+          if (this.calendarMonth < 0) {
+            this.calendarMonth = 11;
+            this.calendarYear--;
+          }
+          if (this.calendarMonth > 11) {
+            this.calendarMonth = 0;
+            this.calendarYear++;
+          }
+          this.renderCalendar();
+        },
+
+        resetCalendarToToday() {
+          const now = new Date();
+          this.calendarYear = now.getFullYear();
+          this.calendarMonth = now.getMonth();
+          this.selectedCalendarDate = this.getTodayISO();
+          this.renderCalendar();
+        },
+
+        renderCalendar() {
+          const y = this.calendarYear;
+          const m = this.calendarMonth;
+          document.getElementById("calendarTitle").textContent =
+            `${y} 年 ${m + 1} 月`;
+
+          const weekStart = Number(this.userSettings.weekStart); // 1=週一, 0=週日
+          const headers =
+            weekStart === 1
+              ? ["一", "二", "三", "四", "五", "六", "日"]
+              : ["日", "一", "二", "三", "四", "五", "六"];
+          document.getElementById("calendarWeekHeader").innerHTML = headers
+            .map((h) => `<div>${h}</div>`)
+            .join("");
+
+          const firstDay = new Date(y, m, 1).getDay();
+          const offset =
+            weekStart === 1 ? (firstDay === 0 ? 6 : firstDay - 1) : firstDay;
+          const daysInMonth = new Date(y, m + 1, 0).getDate();
+          const colorMode =
+            document.getElementById("calendarColorMode")?.value || "quality";
+
+          const recMap = {};
+          this.records.forEach((r) => (recMap[r.date] = r));
+
+          const cells = [];
+          for (let i = 0; i < offset; i++)
+            cells.push(
+              `<div class="h-16 sm:h-20 rounded-lg bg-slate-50/50 dark:bg-slate-800/30"></div>`,
+            );
+
+          for (let d = 1; d <= daysInMonth; d++) {
+            const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+            const rec = recMap[iso];
+            const isSelected = iso === this.selectedCalendarDate;
+            let dotOrBadge = `<span class="text-[11px] text-slate-300 dark:text-slate-600">未紀錄</span>`;
+            let bgCls =
+              "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60";
+
+            if (rec) {
+              if (colorMode === "quality") {
+                const qMap = {
+                  好: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 text-emerald-700 dark:text-emerald-300",
+                  普通: "bg-sky-50 dark:bg-sky-950/40 border-sky-300 text-sky-700 dark:text-sky-300",
+                  差: "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-300",
+                  很差: "bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-700 dark:text-rose-300",
+                };
+                bgCls = qMap[rec.sleepQuality] || bgCls;
+                dotOrBadge = `<div class="text-xs font-bold">● ${rec.sleepQuality}</div><div class="text-[11px] opacity-80">晨 ${rec.morningScore} / 睡 ${rec.bedtimeScore}</div>`;
+              } else {
+                if (rec.morningScore >= 8)
+                  bgCls =
+                    "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 text-emerald-700 dark:text-emerald-300";
+                else if (rec.morningScore <= 4)
+                  bgCls =
+                    "bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-700 dark:text-rose-300";
+                else
+                  bgCls =
+                    "bg-sky-50 dark:bg-sky-950/40 border-sky-300 text-sky-700 dark:text-sky-300";
+                const tag =
+                  rec.morningScore >= 8
+                    ? "良好"
+                    : rec.morningScore <= 4
+                      ? "注意"
+                      : "普通";
+                dotOrBadge = `<div class="text-xs font-bold">晨起 ${rec.morningScore} (${tag})</div><div class="text-[11px] opacity-80">品質：${rec.sleepQuality}</div>`;
+              }
+            }
+
+            const ringCls = isSelected
+              ? "ring-2 ring-blue-600 dark:ring-blue-400"
+              : "border border-slate-200 dark:border-slate-700";
+            cells.push(`
+            <button onclick="App.selectCalendarDate('${iso}')" class="h-16 sm:h-20 p-1.5 rounded-xl text-left flex flex-col justify-between transition ${bgCls} ${ringCls}">
+              <span class="text-xs font-bold">${d}</span>
+              <div class="truncate w-full">${dotOrBadge}</div>
+            </button>
+          `);
+          }
+
+          document.getElementById("calendarGrid").innerHTML = cells.join("");
+          this.renderCalendarDetailPanel();
+        },
+
+        selectCalendarDate(iso) {
+          this.selectedCalendarDate = iso;
+          this.renderCalendar();
+        },
+
+        renderCalendarDetailPanel() {
+          const panel = document.getElementById("calendarDetailPanel");
+          const iso = this.selectedCalendarDate || this.getTodayISO();
+          const rec = this.records.find((r) => r.date === iso);
+
+          if (!rec) {
+            panel.innerHTML = `
+            <div class="space-y-3">
+              <div class="text-base font-bold">${this.formatDateDisplay(iso)}（${this.getWeekdayChar(iso)}）</div>
+              <div class="py-8 text-center text-slate-400 text-sm">這一天尚未紀錄</div>
+            </div>
+            <button onclick="App.openRecordModal(null, false, '${iso}')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium">＋ 新增紀錄</button>
+          `;
+            return;
+          }
+
+          const customList = this.customFields
+            .map((cf) => {
+              const v = rec.customValues?.[cf.id];
+              if (v === undefined || v === null || v === "") return "";
+              return `<div class="flex justify-between text-xs border-b border-slate-100 dark:border-slate-700 py-1">
+            <span class="text-slate-500">${this.escapeHTML(cf.name)}</span>
+            <span class="font-medium">${this.escapeHTML(Array.isArray(v) ? v.join(", ") : v)} ${this.escapeHTML(cf.unit || "")}</span>
+          </div>`;
+            })
+            .join("");
+
+          panel.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+              <span class="font-bold text-base">${this.formatDateDisplay(rec.date)}（${this.getWeekdayChar(rec.date)}）</span>
+              ${this.renderQualityBadgeHTML(rec.sleepQuality)}
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-center">
+              <div class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/50">
+                <div class="text-xs text-slate-500">🌅 晨起評分</div>
+                <div class="text-lg font-bold mt-0.5">${rec.morningScore} / 10</div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/50">
+                <div class="text-xs text-slate-500">🌙 睡前評分</div>
+                <div class="text-lg font-bold mt-0.5">${rec.bedtimeScore} / 10</div>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-500 mb-1">備註內容</div>
+              <div class="text-sm bg-slate-50 dark:bg-slate-700/40 p-2.5 rounded-lg min-h-[60px] whitespace-pre-wrap">${this.escapeHTML(rec.note || "（無備註）")}</div>
+            </div>
+            ${customList ? `<div class="space-y-1 pt-1">${customList}</div>` : ""}
+          </div>
+          <div class="flex gap-2 pt-4">
+            <button onclick="App.openRecordModal('${rec.id}', false)" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium">✏️ 編輯紀錄</button>
+            <button onclick="App.deleteRecord('${rec.id}')" class="px-3 py-2 border border-rose-300 text-rose-600 rounded-lg text-xs font-medium">🗑 刪除</button>
+          </div>
+        `;
+        },
+
+        /* ================= 統計 Dashboard、週報、月報、SVG 折線圖与交叉分析 ================= */
+        getRecordsInLastNDays(days) {
+          if (!days || days <= 0) return [...this.records];
+          const today = this.getTodayISO();
+          const [y, m, d] = today.split("-").map(Number);
+          const cutoff = this.dateToISO(new Date(y, m - 1, d - (days - 1)));
+          return this.records.filter(
+            (r) => r.date >= cutoff && r.date <= today,
+          );
+        },
+
+        avg(arr) {
+          if (!arr || arr.length === 0) return "--";
+          const sum = arr.reduce((a, b) => a + Number(b), 0);
+          return (sum / arr.length).toFixed(1);
+        },
+
+        setStatsRange(days) {
+          this.statsRangeDays = days;
+          this.renderStatisticsPage();
+        },
+
+        renderStatisticsPage() {
+          document.querySelectorAll(".stats-range-btn").forEach((btn) => {
+            const active = Number(btn.dataset.srange) === this.statsRangeDays;
+            btn.className = `stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md ${
+              active
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-300"
+            }`;
+          });
+
+          const r7 = this.getRecordsInLastNDays(7);
+          const r30 = this.getRecordsInLastNDays(30);
+          const topCards = [
+            { label: "紀錄總天數", val: `${this.records.length} 天` },
+            {
+              label: "最近 7 天平均晨起",
+              val: this.avg(r7.map((r) => r.morningScore)),
+            },
+            {
+              label: "最近 7 天平均睡前",
+              val: this.avg(r7.map((r) => r.bedtimeScore)),
+            },
+            {
+              label: "最近 30 天平均晨起",
+              val: this.avg(r30.map((r) => r.morningScore)),
+            },
+            {
+              label: "最近 30 天平均睡前",
+              val: this.avg(r30.map((r) => r.bedtimeScore)),
+            },
+          ];
+          document.getElementById("statsTopCards").innerHTML = topCards
+            .map(
+              (c) => `
+          <div class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="text-xs text-slate-500">${c.label}</div>
+            <div class="text-xl font-bold mt-1">${c.val}</div>
+          </div>
+        `,
+            )
+            .join("");
+
+          this.renderWeeklyAndMonthlySummaries();
+
+          const rangeRecords = this.getRecordsInLastNDays(
+            this.statsRangeDays,
+          ).sort((a, b) => a.date.localeCompare(b.date));
+          this.renderSVGLineChart("chartMorning", rangeRecords, [
+            { key: "morningScore", color: "#3b82f6" },
+          ]);
+          this.renderSVGLineChart("chartBedtime", rangeRecords, [
+            { key: "bedtimeScore", color: "#a855f7" },
+          ]);
+          this.renderSVGLineChart("chartCompare", rangeRecords, [
+            { key: "morningScore", color: "#3b82f6" },
+            { key: "bedtimeScore", color: "#a855f7" },
+          ]);
+
+          this.renderQualityDistributionAndCorrelation(rangeRecords);
+          this.renderCustomAndConditionalAnalysis(rangeRecords);
+        },
+
+        renderWeeklyAndMonthlySummaries() {
+          const today = this.getTodayISO();
+          const [ty, tm, td] = today.split("-").map(Number);
+
+          // 本週 (過去 7 天) 與 上週 (前 8~14 天)
+          const thisWeekStart = this.dateToISO(new Date(ty, tm - 1, td - 6));
+          const lastWeekStart = this.dateToISO(new Date(ty, tm - 1, td - 13));
+          const lastWeekEnd = this.dateToISO(new Date(ty, tm - 1, td - 7));
+
+          const wRecs = this.records.filter(
+            (r) => r.date >= thisWeekStart && r.date <= today,
+          );
+          const lwRecs = this.records.filter(
+            (r) => r.date >= lastWeekStart && r.date <= lastWeekEnd,
+          );
+
+          const wQ = { 好: 0, 普通: 0, 差: 0, 很差: 0 };
+          wRecs.forEach(
+            (r) => (wQ[r.sleepQuality] = (wQ[r.sleepQuality] || 0) + 1),
+          );
+
+          let wDiffText =
+            '<span class="text-xs text-slate-400">上週資料不足，暫不顯示比較結果</span>';
+          if (wRecs.length >= 2 && lwRecs.length >= 2) {
+            const diff = (
+              Number(this.avg(wRecs.map((r) => r.morningScore))) -
+              Number(this.avg(lwRecs.map((r) => r.morningScore)))
+            ).toFixed(1);
+            const word =
+              diff >= 0 ? `高 ${diff} 分` : `低 ${Math.abs(diff)} 分`;
+            wDiffText = `<span class="text-xs font-medium text-blue-600 dark:text-blue-400">📊 本週晨起平均比上週${word}。</span>`;
+          }
+
+          document.getElementById("weeklyReportBox").innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+            <h3 class="text-sm font-bold">📅 本週摘要（最近 7 天）</h3>
+            <span class="text-xs font-semibold">紀錄：${wRecs.length} / 7 天</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs py-1">
+            <div>晨起平均：<strong class="text-sm">${this.avg(wRecs.map((r) => r.morningScore))}</strong></div>
+            <div>睡前平均：<strong class="text-sm">${this.avg(wRecs.map((r) => r.bedtimeScore))}</strong></div>
+          </div>
+          <div class="text-xs text-slate-600 dark:text-slate-300">
+            睡眠品質：好 ${wQ["好"]} 天 ｜ 普通 ${wQ["普通"]} 天 ｜ 差 ${wQ["差"]} 天 ｜ 很差 ${wQ["很差"]} 天
+          </div>
+          <div class="pt-1">${wDiffText}</div>
+        `;
+
+          // 本月 與 上個月
+          const thisMPrefix = today.slice(0, 7);
+          const lastMPrefix = this.dateToISO(new Date(ty, tm - 2, 1)).slice(
+            0,
+            7,
+          );
+          const mRecs = this.records.filter((r) =>
+            r.date.startsWith(thisMPrefix),
+          );
+          const lmRecs = this.records.filter((r) =>
+            r.date.startsWith(lastMPrefix),
+          );
+          const mQ = { 好: 0, 普通: 0, 差: 0, 很差: 0 };
+          mRecs.forEach(
+            (r) => (mQ[r.sleepQuality] = (mQ[r.sleepQuality] || 0) + 1),
+          );
+
+          let mDiffText =
+            '<span class="text-xs text-slate-400">上個月資料不足，暫不顯示比較結果</span>';
+          if (mRecs.length >= 2 && lmRecs.length >= 2) {
+            const mDiff = (
+              Number(this.avg(mRecs.map((r) => r.morningScore))) -
+              Number(this.avg(lmRecs.map((r) => r.morningScore)))
+            ).toFixed(1);
+            const bDiff = (
+              Number(this.avg(mRecs.map((r) => r.bedtimeScore))) -
+              Number(this.avg(lmRecs.map((r) => r.bedtimeScore)))
+            ).toFixed(1);
+            mDiffText = `<span class="text-xs font-medium text-emerald-600 dark:text-emerald-400">📊 與上個月比較：晨起 ${mDiff >= 0 ? "+" + mDiff : mDiff} ｜ 睡前 ${bDiff >= 0 ? "+" + bDiff : bDiff}</span>`;
+          }
+
+          document.getElementById("monthlyReportBox").innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+            <h3 class="text-sm font-bold">🗓️ 本月摘要（${thisMPrefix.replace("-", "/")}）</h3>
+            <span class="text-xs font-semibold">本月紀錄：${mRecs.length} 天</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs py-1">
+            <div>晨起平均：<strong class="text-sm">${this.avg(mRecs.map((r) => r.morningScore))}</strong></div>
+            <div>睡前平均：<strong class="text-sm">${this.avg(mRecs.map((r) => r.bedtimeScore))}</strong></div>
+          </div>
+          <div class="text-xs text-slate-600 dark:text-slate-300">
+            睡眠品質：好 ${mQ["好"]} ｜ 普通 ${mQ["普通"]} ｜ 差 ${mQ["差"]} ｜ 很差 ${mQ["很差"]}
+          </div>
+          <div class="pt-1">${mDiffText}</div>
+        `;
+        },
+
+        renderSVGLineChart(containerId, recordsAsc, seriesList) {
+          const box = document.getElementById(containerId);
+          if (!recordsAsc || recordsAsc.length < 2) {
+            box.innerHTML = `<div class="text-xs text-slate-400 text-center py-8">目前只有 ${recordsAsc?.length || 0} 天資料，累積 2 天以上紀錄後會顯示完整趨勢折線圖。</div>`;
+            return;
+          }
+
+          const W = 600,
+            H = 190,
+            padL = 32,
+            padR = 16,
+            padT = 16,
+            padB = 28;
+          const plotW = W - padL - padR;
+          const plotH = H - padT - padB;
+          const n = recordsAsc.length;
+
+          const xAt = (i) => padL + (i / (n - 1)) * plotW;
+          const yAt = (val) => padT + ((10 - Number(val)) / 9) * plotH;
+
+          let gridSVG = "";
+          [2, 4, 6, 8, 10].forEach((v) => {
+            const y = yAt(v);
+            gridSVG += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="currentColor" class="text-slate-200 dark:text-slate-700" stroke-dasharray="3,3" stroke-width="1"/>`;
+            gridSVG += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" class="fill-slate-400 text-[10px]">${v}</text>`;
+          });
+
+          // X 軸首尾與中間日期
+          const idxs = [0, Math.floor((n - 1) / 2), n - 1];
+          idxs.forEach((idx) => {
+            const x = xAt(idx);
+            const dLabel = recordsAsc[idx].date.slice(5).replace("-", "/");
+            gridSVG += `<text x="${x}" y="${H - 6}" text-anchor="middle" class="fill-slate-400 text-[10px]">${dLabel}</text>`;
+          });
+
+          let pathsSVG = "";
+          seriesList.forEach((s) => {
+            const pts = recordsAsc
+              .map((r, i) => `${xAt(i).toFixed(1)},${yAt(r[s.key]).toFixed(1)}`)
+              .join(" ");
+            pathsSVG += `<polyline fill="none" stroke="${s.color}" stroke-width="2.2" points="${pts}" />`;
+            if (n <= 45) {
+              recordsAsc.forEach((r, i) => {
+                pathsSVG += `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(r[s.key]).toFixed(1)}" r="3" fill="${s.color}">
+                <title>${this.formatDateDisplay(r.date)}: ${r[s.key]} 分</title>
+              </circle>`;
+              });
+            }
+          });
+
+          box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="w-full h-full overflow-visible">${gridSVG}${pathsSVG}</svg>`;
+        },
+
+        renderQualityDistributionAndCorrelation(recs) {
+          const distEl = document.getElementById("sleepQualityDistribution");
+          const corrEl = document.getElementById("qualityMorningCorrelation");
+          if (recs.length === 0) {
+            distEl.innerHTML = `<div class="text-xs text-slate-400">尚無資料</div>`;
+            corrEl.innerHTML = `<div class="text-xs text-slate-400">尚無資料</div>`;
+            return;
+          }
+
+          const counts = { 好: 0, 普通: 0, 差: 0, 很差: 0 };
+          const morningByQ = { 好: [], 普通: [], 差: [], 很差: [] };
+          recs.forEach((r) => {
+            counts[r.sleepQuality] = (counts[r.sleepQuality] || 0) + 1;
+            if (morningByQ[r.sleepQuality])
+              morningByQ[r.sleepQuality].push(r.morningScore);
+          });
+
+          const barColors = {
+            好: "bg-emerald-500",
+            普通: "bg-sky-500",
+            差: "bg-amber-500",
+            很差: "bg-rose-500",
+          };
+          distEl.innerHTML = ["好", "普通", "差", "很差"]
+            .map((q) => {
+              const c = counts[q] || 0;
+              const pct = Math.round((c / recs.length) * 100);
+              return `<div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-medium">${q}</span>
+              <span>${c} 天 (${pct}%)</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full ${barColors[q]}" style="width:${pct}%"></div>
+            </div>
+          </div>`;
+            })
+            .join("");
+
+          corrEl.innerHTML = ["好", "普通", "差", "很差"]
+            .map((q) => {
+              const arr = morningByQ[q];
+              if (!arr || arr.length === 0)
+                return `<div class="text-xs text-slate-400">睡眠品質為「${q}」的日子：尚無紀錄。</div>`;
+              return `<div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-700/40 text-xs">
+            睡眠品質為「<strong>${q}</strong>」的日子（共 ${arr.length} 天），晨起平均分數為 <strong>${this.avg(arr)}</strong>。
+          </div>`;
+            })
+            .join("");
+        },
+
+        renderCustomAndConditionalAnalysis(recs) {
+          const numBox = document.getElementById("customNumericStats");
+          const condBox = document.getElementById("conditionalCrossStats");
+
+          // 數值型自訂欄位統計
+          const numFields = this.customFields.filter((f) =>
+            ["integer", "decimal", "unit", "score10", "slider"].includes(
+              f.type,
+            ),
+          );
+          if (numFields.length === 0 || recs.length === 0) {
+            numBox.innerHTML = `<div class="text-xs text-slate-400">新增數值型自訂欄位（如：體重、步數、疲勞程度）並累積紀錄後，將自動顯示平均、最高與最低統計。</div>`;
+          } else {
+            numBox.innerHTML = numFields
+              .map((cf) => {
+                const vals = recs
+                  .map((r) => r.customValues?.[cf.id])
+                  .filter(
+                    (v) =>
+                      v !== undefined &&
+                      v !== null &&
+                      v !== "" &&
+                      !isNaN(Number(v)),
+                  )
+                  .map(Number);
+                if (vals.length === 0)
+                  return `<div class="text-xs text-slate-400">${this.escapeHTML(cf.name)}：尚無數值資料</div>`;
+                const mean = this.avg(vals);
+                const max = Math.max(...vals);
+                const min = Math.min(...vals);
+                const u = cf.unit ? ` ${this.escapeHTML(cf.unit)}` : "";
+                return `<div class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/40 flex items-center justify-between text-xs">
+              <span class="font-bold">${this.escapeHTML(cf.name)} <span class="font-normal text-slate-400">(${vals.length}筆)</span></span>
+              <span>平均 <strong>${mean}${u}</strong> ｜ 最高 ${max}${u} ｜ 最低 ${min}${u}</span>
+            </div>`;
+              })
+              .join("");
+          }
+
+          // 條件交叉分析（是/否 或 單選自訂欄位，以及備註關鍵字如「運動」「咖啡」）
+          const insights = [];
+          const boolFields = this.customFields.filter(
+            (f) => f.type === "boolean",
+          );
+          boolFields.forEach((cf) => {
+            const yesRecs = recs.filter(
+              (r) =>
+                r.customValues?.[cf.id] === "是" ||
+                r.customValues?.[cf.id] === true,
+            );
+            const noRecs = recs.filter(
+              (r) =>
+                r.customValues?.[cf.id] === "否" ||
+                r.customValues?.[cf.id] === false,
+            );
+            if (yesRecs.length > 0 && noRecs.length > 0) {
+              const yesGoodPct = Math.round(
+                (yesRecs.filter((r) => r.sleepQuality === "好").length /
+                  yesRecs.length) *
+                  100,
+              );
+              const noGoodPct = Math.round(
+                (noRecs.filter((r) => r.sleepQuality === "好").length /
+                  noRecs.length) *
+                  100,
+              );
+              insights.push(
+                `「<strong>${this.escapeHTML(cf.name)} = 是</strong>」的日子（${yesRecs.length}天）晨起平均 <strong>${this.avg(yesRecs.map((r) => r.morningScore))}</strong>（睡眠品質為好佔 ${yesGoodPct}%）；「<strong>否</strong>」的日子（${noRecs.length}天）晨起平均 <strong>${this.avg(noRecs.map((r) => r.morningScore))}</strong>（睡眠品質為好佔 ${noGoodPct}%）。`,
+              );
+            }
+          });
+
+          // 自動從備註與欄位分析「運動」
+          const exRecs = recs.filter((r) => (r.note || "").includes("運動"));
+          const noExRecs = recs.filter((r) => !(r.note || "").includes("運動"));
+          if (exRecs.length >= 2 && noExRecs.length >= 2) {
+            insights.push(
+              `備註提及「<strong>運動</strong>」的日子（${exRecs.length}天），晨起平均分數為 <strong>${this.avg(exRecs.map((r) => r.morningScore))}</strong>；未提及的日子（${noExRecs.length}天），晨起平均分數為 <strong>${this.avg(noExRecs.map((r) => r.morningScore))}</strong>。`,
+            );
+          }
+
+          if (insights.length === 0) {
+            condBox.innerHTML = `<div class="text-xs text-slate-400">當你新增「是／否」類型欄位（如：是否運動、咖啡）或備註累積足夠紀錄後，系統會在此呈現客觀資料交叉比較。</div>`;
+          } else {
+            condBox.innerHTML = insights
+              .map(
+                (text) =>
+                  `<div class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/40 text-xs leading-relaxed">${text}</div>`,
+              )
+              .join("");
+          }
+        },
+
+        /* ================= 資料管理、CSV/JSON 匯出、完整備份與還原 ================= */
+        renderDataManagementPage() {
+          const sortedAsc = [...this.records].sort((a, b) =>
+            a.date.localeCompare(b.date),
+          );
+          const earliest = sortedAsc.length
+            ? this.formatDateDisplay(sortedAsc[0].date)
+            : "--";
+          const latest = sortedAsc.length
+            ? this.formatDateDisplay(sortedAsc[sortedAsc.length - 1].date)
+            : "--";
+
+          const cards = [
+            { label: "目前紀錄總數", val: `${this.records.length} 筆` },
+            { label: "自訂欄位數量", val: `${this.customFields.length} 個` },
+            { label: "最早紀錄日期", val: earliest },
+            { label: "最近紀錄日期", val: latest },
+          ];
+          document.getElementById("dataOverviewCards").innerHTML = cards
+            .map(
+              (c) => `
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700">
+            <div class="text-xs text-slate-500">${c.label}</div>
+            <div class="text-lg font-bold mt-1">${c.val}</div>
+          </div>
+        `,
+            )
+            .join("");
+        },
+
+        exportCSV() {
+          try {
+            if (this.records.length === 0)
+              return this.showToast("目前沒有紀錄可匯出", "error");
+            const cols = this.fieldOrder;
+            const headers = cols.map((k) => this.getColumnLabel(k));
+
+            const escapeCSV = (val) => {
+              if (val === null || val === undefined) return '""';
+              const str = Array.isArray(val) ? val.join("; ") : String(val);
+              return `"${str.replace(/"/g, '""')}"`;
+            };
+
+            const rows = [headers.map(escapeCSV).join(",")];
+            const sorted = [...this.records].sort((a, b) =>
+              b.date.localeCompare(a.date),
+            );
+
+            sorted.forEach((rec) => {
+              const line = cols.map((k) => {
+                if (k === "date")
+                  return escapeCSV(this.formatDateDisplay(rec.date));
+                if (k === "weekday")
+                  return escapeCSV(this.getWeekdayChar(rec.date));
+                if (k === "morningScore") return escapeCSV(rec.morningScore);
+                if (k === "bedtimeScore") return escapeCSV(rec.bedtimeScore);
+                if (k === "sleepQuality") return escapeCSV(rec.sleepQuality);
+                if (k === "note") return escapeCSV(rec.note || "");
+                return escapeCSV(rec.customValues?.[k] ?? "");
+              });
+              rows.push(line.join(","));
+            });
+
+            const bom = "\uFEFF";
+            const blob = new Blob([bom + rows.join("\r\n")], {
+              type: "text/csv;charset=utf-8;",
+            });
+            this.triggerDownload(
+              blob,
+              `sleep_records_${this.getTodayISO()}.csv`,
+            );
+            this.showToast("CSV 匯出成功 ✓");
+          } catch (err) {
+            this.showToast("CSV 匯出失敗，請重試", "error");
+          }
+        },
+
+        exportRecordsJSON() {
+          if (this.records.length === 0)
+            return this.showToast("目前沒有紀錄可匯出", "error");
+          const blob = new Blob([JSON.stringify(this.records, null, 2)], {
+            type: "application/json",
+          });
+          this.triggerDownload(
+            blob,
+            `sleep_records_${this.getTodayISO()}.json`,
+          );
+          this.showToast("JSON 紀錄匯出成功 ✓");
+        },
+
+        exportFullBackup() {
+          const backup = {
+            app: "SleepBodyTracker",
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            records: this.records,
+            customFields: this.customFields,
+            fieldOrder: this.fieldOrder,
+            displaySettings: this.displaySettings,
+            userSettings: this.userSettings,
+          };
+          const blob = new Blob([JSON.stringify(backup, null, 2)], {
+            type: "application/json",
+          });
+          this.triggerDownload(
+            blob,
+            `sleep_tracker_backup_${this.getTodayISO()}.json`,
+          );
+          this.showToast("完整系統備份已下載 ✓");
+        },
+
+        triggerDownload(blob, filename) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        },
+
+        handleBackupFileSelect(e) {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const parsed = JSON.parse(reader.result);
+              let records = [];
+              let customFields = [];
+
+              if (Array.isArray(parsed)) {
+                records = parsed;
+              } else if (parsed && Array.isArray(parsed.records)) {
+                records = parsed.records;
+                customFields = Array.isArray(parsed.customFields)
+                  ? parsed.customFields
+                  : [];
+              } else {
+                throw new Error("格式不符");
+              }
+
+              // 檢查基本欄位有效性
+              const validRecords = records.filter(
+                (r) =>
+                  r &&
+                  /^\d{4}-\d{2}-\d{2}$/.test(r.date) &&
+                  r.morningScore >= 1 &&
+                  r.morningScore <= 10,
+              );
+              if (records.length > 0 && validRecords.length === 0) {
+                throw new Error("找不到有效的每日紀錄格式");
+              }
+
+              this.pendingImportData = {
+                records: validRecords,
+                customFields,
+                fieldOrder: parsed.fieldOrder,
+                displaySettings: parsed.displaySettings,
+                userSettings: parsed.userSettings,
+              };
+
+              document.getElementById("importSummaryText").textContent =
+                `找到 ${validRecords.length} 筆每日紀錄、${customFields.length} 個自訂欄位。`;
+              document
+                .getElementById("importConfirmModal")
+                .classList.remove("hidden");
+            } catch (err) {
+              this.showToast(
+                "JSON 備份檔案格式錯誤，請確認選擇正確的備份檔",
+                "error",
+              );
+            } finally {
+              e.target.value = "";
+            }
+          };
+          reader.readAsText(file);
+        },
+
+        closeImportModal() {
+          this.pendingImportData = null;
+          document.getElementById("importConfirmModal").classList.add("hidden");
+        },
+
+        async executeImport(mode) {
+          if (!this.pendingImportData) return;
+          try {
+            const data = this.pendingImportData;
+            if (mode === "overwrite") {
+              await DB.clear("records");
+              await DB.clear("customFields");
+              for (const cf of data.customFields)
+                await DB.put("customFields", cf);
+              for (const r of data.records) await DB.put("records", r);
+              if (data.fieldOrder) this.fieldOrder = data.fieldOrder;
+              if (data.displaySettings)
+                this.displaySettings = data.displaySettings;
+              if (data.userSettings)
+                this.userSettings = {
+                  ...this.userSettings,
+                  ...data.userSettings,
+                };
+            } else {
+              // 合併模式
+              for (const cf of data.customFields)
+                await DB.put("customFields", cf);
+              const existingByDate = {};
+              this.records.forEach((r) => (existingByDate[r.date] = r));
+              for (const r of data.records) {
+                if (existingByDate[r.date]) {
+                  r.id = existingByDate[r.date].id;
+                }
+                await DB.put("records", r);
+              }
+            }
+            await this.persistSettings();
+            await this.loadAllData();
+            this.closeImportModal();
+            this.applyTheme();
+            this.renderAll();
+            this.showToast(
+              `成功${mode === "overwrite" ? "覆蓋" : "合併"}匯入 ${data.records.length} 筆紀錄 ✓`,
+            );
+          } catch (err) {
+            this.showToast("匯入過程發生錯誤，請重試", "error");
+          }
+        },
+
+        /* ================= 刪除全部資料與 Demo 資料管理 ================= */
+        openDeleteAllModal() {
+          document.getElementById("deleteAllCountText").textContent =
+            `目前共有 ${this.records.length} 筆每日紀錄、${this.customFields.length} 個自訂欄位。`;
+          document.getElementById("deleteAllModal").classList.remove("hidden");
+        },
+
+        closeDeleteAllModal() {
+          document.getElementById("deleteAllModal").classList.add("hidden");
+        },
+
+        async backupThenDeleteAll() {
+          this.exportFullBackup();
+          await this.executeDeleteAll();
+        },
+
+        async executeDeleteAll() {
+          await DB.clear("records");
+          await DB.clear("customFields");
+          this.fieldOrder = [
+            "date",
+            "weekday",
+            "morningScore",
+            "bedtimeScore",
+            "sleepQuality",
+            "note",
+          ];
+          this.displaySettings.visibleColumns = {
+            date: true,
+            weekday: true,
+            morningScore: true,
+            bedtimeScore: true,
+            sleepQuality: true,
+            note: true,
+          };
+          await this.persistSettings();
+          await this.loadAllData();
+          this.closeDeleteAllModal();
+          this.renderAll();
+          this.showToast("已清空所有資料");
+        },
+
+        async generateDemoData() {
+          // 先建立 2 個常用示範欄位（若尚未存在）
+          let exField = this.customFields.find((f) => f.name === "是否運動");
+          if (!exField) {
+            exField = {
+              id: "cf_demo_exercise",
+              name: "是否運動",
+              type: "boolean",
+              options: [],
+              unit: "",
+              required: false,
+              visible: true,
+              order: this.customFields.length,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            await DB.put("customFields", exField);
+          }
+          let wtField = this.customFields.find((f) => f.name === "體重");
+          if (!wtField) {
+            wtField = {
+              id: "cf_demo_weight",
+              name: "體重",
+              type: "unit",
+              options: [],
+              unit: "kg",
+              required: false,
+              visible: true,
+              order: this.customFields.length + 1,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            await DB.put("customFields", wtField);
+          }
+
+          const today = new Date();
+          const sampleNotes = [
+            "調整完後，的確感覺到全身有放鬆感，入睡很快。",
+            "下午喝了一杯拿鐵咖啡，晚上稍微比較晚睡。",
+            "今天有去快走運動 40 分鐘，晚上睡眠深沉。",
+            "工作比較忙碌，肩頸有點緊繃，睡前拉筋 10 分鐘。",
+            "作息正常，起床精神不錯。",
+            "稍微有點頭痛，提早上床休息。",
+          ];
+
+          let added = 0;
+          for (let i = 0; i < 30; i++) {
+            const dt = new Date(
+              today.getFullYear(),
+              today.getMonth(),
+              today.getDate() - i,
+            );
+            const iso = this.dateToISO(dt);
+            if (this.records.some((r) => r.date === iso)) continue; // 不覆蓋使用者已建立的真實紀錄
+
+            const hasEx = i % 2 === 0;
+            const mScore = hasEx
+              ? Math.min(10, 6 + (i % 4))
+              : Math.max(3, 5 + (i % 3) - 1);
+            const bScore = Math.min(10, 6 + ((i + 1) % 4));
+            const q =
+              mScore >= 8
+                ? "好"
+                : mScore >= 6
+                  ? "普通"
+                  : mScore >= 4
+                    ? "差"
+                    : "很差";
+            const weight = (62.0 + Math.sin(i * 0.3) * 0.6).toFixed(1);
+
+            await DB.put("records", {
+              id: `demo_${iso}`,
+              date: iso,
+              morningScore: mScore,
+              bedtimeScore: bScore,
+              sleepQuality: q,
+              note: sampleNotes[i % sampleNotes.length],
+              customValues: {
+                [exField.id]: hasEx ? "是" : "否",
+                [wtField.id]: Number(weight),
+              },
+              isDemo: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+            added++;
+          }
+
+          await this.loadAllData();
+          await this.persistSettings();
+          this.renderAll();
+          this.showToast(`已載入 ${added} 天模擬 Demo 資料（可隨時一鍵清除）`);
+        },
+
+        async clearDemoData() {
+          const demos = this.records.filter((r) => r.isDemo);
+          for (const r of demos) {
+            await DB.delete("records", r.id);
+          }
+          await this.loadAllData();
+          this.renderAll();
+          this.showToast(`已清除 ${demos.length} 筆 Demo 資料 ✓`);
+        },
+
+        async dismissWelcome(withDemo) {
+          this.userSettings.welcomed = true;
+          await this.persistSettings();
+          document.getElementById("welcomeModal").classList.add("hidden");
+          if (withDemo) await this.generateDemoData();
+        },
+
+        /* ================= 鍵盤快捷鍵與 Toast 通知 ================= */
+        bindKeyboardShortcuts() {
+          window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+              this.closeRecordModal();
+              this.closeCustomFieldModal();
+              this.closeDeleteFieldModal();
+              this.closeImportModal();
+              this.closeDeleteAllModal();
+              document
+                .getElementById("columnSelectorPopup")
+                .classList.add("hidden");
+            }
+          });
+        },
+
+        showToast(msg, type = "info") {
+          const container = document.getElementById("toastContainer");
+          const el = document.createElement("div");
+          const bg =
+            type === "error" ? "bg-rose-600" : "bg-slate-800 dark:bg-slate-700";
+          el.className = `${bg} text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium pointer-events-auto flex items-center justify-between transition`;
+          el.innerHTML = `<span>${this.escapeHTML(msg)}</span>`;
+          container.appendChild(el);
+          setTimeout(() => el.remove(), 3200);
+        },
+
+        showUndoToast(msg) {
+          const container = document.getElementById("toastContainer");
+          const el = document.createElement("div");
+          el.className = `bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium pointer-events-auto flex items-center justify-between gap-3`;
+          el.innerHTML = `
+          <span>${this.escapeHTML(msg)}</span>
+          <button onclick="App.undoDeleteRecord(); this.parentElement.remove();" class="px-2.5 py-1 bg-blue-500 hover:bg-blue-600 rounded font-bold">↩ 復原 (Undo)</button>
+        `;
+          container.appendChild(el);
+          clearTimeout(this.undoTimer);
+          this.undoTimer = setTimeout(() => {
+            el.remove();
+            this.lastDeletedRecord = null;
+          }, 6500);
+        },
+      };
+
+      window.addEventListener("DOMContentLoaded", () => App.init());
+    </script>
+  </body>
+</html>
