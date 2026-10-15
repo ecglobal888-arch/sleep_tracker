@@ -9,8 +9,8 @@
     <title>每日睡眠與身體狀況紀錄</title>
 
     <!-- 手機主畫面專屬圖示 (讀取同資料夾下的 icon.png) -->
-    <link rel="icon" type="image/png" href="sun.png" />
-    <link rel="apple-touch-icon" href="sun.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="icon.png?v=2" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon.png?v=2" />
 
     <!-- 手機主畫面 App 全螢幕與狀態列設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -22,7 +22,7 @@
     <!-- 動態 Manifest 讓 Android Chrome 支援全螢幕安裝與圖示 -->
     <script>
       (function () {
-        const iconAbsoluteUrl = new URL("sun.png?v=2", window.location.href)
+        const iconAbsoluteUrl = new URL("icon.png?v=2", window.location.href)
           .href;
         const manifest = {
           name: "每日睡眠與身體狀況紀錄",
