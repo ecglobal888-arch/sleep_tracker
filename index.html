@@ -7,9 +7,10 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>每日睡眠與身體狀況紀錄</title>
+
     <!-- 手機主畫面專屬圖示 (讀取同資料夾下的 icon.png) -->
-    <link rel="icon" type="image/png" href="sun.png" />
-    <link rel="apple-touch-icon" href="sun.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="sun.png?v=2" />
+    <link rel="apple-touch-icon" sizes="512x512" href="sun.png?v=2" />
 
     <!-- 手機主畫面 App 全螢幕與狀態列設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -18,7 +19,43 @@
     <meta name="apple-mobile-web-app-title" content="睡眠紀錄" />
     <meta name="theme-color" content="#1e293b" />
 
-    <!-- 自動產生高畫質「夜空彎月」App 圖示與 PWA Manifest (免上傳圖片檔) -->
+    <!-- 動態 Manifest 讓 Android Chrome 支援全螢幕安裝與圖示 -->
+    <script>
+      (function () {
+        const iconAbsoluteUrl = new URL("icon.png?v=2", window.location.href)
+          .href;
+        const manifest = {
+          name: "每日睡眠與身體狀況紀錄",
+          short_name: "睡眠紀錄",
+          start_url: window.location.pathname,
+          display: "standalone",
+          background_color: "#f8fafc",
+          theme_color: "#1e293b",
+          icons: [
+            {
+              src: iconAbsoluteUrl,
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+            {
+              src: iconAbsoluteUrl,
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+          ],
+        };
+        const blob = new Blob([JSON.stringify(manifest)], {
+          type: "application/manifest+json",
+        });
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+      })();
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -90,7 +127,7 @@
               睡眠與身體狀況紀錄
             </h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              🔒 資料儲存在本機瀏覽器
+              🔒 資料儲存在本機瀏覽器[cite: 1]
             </p>
           </div>
           <button
@@ -198,19 +235,13 @@
           <div class="flex flex-wrap items-center gap-2.5">
             <button
               id="btnPrimaryToday"
-              onclick="App.openTodayForm(false)"
+              onclick="App.openTodayForm()"
               class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm shadow-sm transition"
             >
               ＋新增今日紀錄
             </button>
             <button
-              onclick="App.openTodayForm(true)"
-              class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm shadow-sm transition"
-            >
-              ⚡ 30秒快速紀錄
-            </button>
-            <button
-              onclick="App.openRecordModal(null, false)"
+              onclick="App.openRecordModal(null)"
               class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg text-sm transition"
             >
               📅 補登其他日期
@@ -224,7 +255,7 @@
             class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
           >
             <div class="text-xs text-slate-500 dark:text-slate-400">
-              連續紀錄 / 最長
+              連續紀錄 / 最長[cite: 1]
             </div>
             <div class="text-lg font-bold mt-1" id="quickStatStreak">
               0 天
@@ -235,7 +266,7 @@
             class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
           >
             <div class="text-xs text-slate-500 dark:text-slate-400">
-              本週平均晨起 (1-10)
+              本週平均晨起 (1-10)[cite: 1]
             </div>
             <div class="text-lg font-bold mt-1" id="quickStatWeekMorning">
               --
@@ -245,7 +276,7 @@
             class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
           >
             <div class="text-xs text-slate-500 dark:text-slate-400">
-              本週平均睡前 (1-10)
+              本週平均睡前 (1-10)[cite: 1]
             </div>
             <div class="text-lg font-bold mt-1" id="quickStatWeekBed">--</div>
           </div>
@@ -253,7 +284,7 @@
             class="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700"
           >
             <div class="text-xs text-slate-500 dark:text-slate-400">
-              本月紀錄完整度
+              本月紀錄完整度[cite: 1]
             </div>
             <div class="text-lg font-bold mt-1" id="quickStatMonthRate">
               0 / 30 (0%)
@@ -269,7 +300,7 @@
             <div>
               <label
                 class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
-                >搜尋備註與自訂內容</label
+                >搜尋備註與自訂內容[cite: 1]</label
               >
               <input
                 type="text"
@@ -282,7 +313,7 @@
             <div>
               <label
                 class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
-                >日期範圍</label
+                >日期範圍[cite: 1]</label
               >
               <select
                 id="filterDateRange"
@@ -291,19 +322,19 @@
               >
                 <option value="all">全部日期</option>
                 <option value="today">今天</option>
-                <option value="7d">最近 7 天</option>
-                <option value="30d">最近 30 天</option>
-                <option value="90d">最近 90 天</option>
-                <option value="thisMonth">本月</option>
-                <option value="lastMonth">上個月</option>
-                <option value="thisYear">今年</option>
-                <option value="custom">自訂日期範圍...</option>
+                <option value="7d">最近 7 天[cite: 1]</option>
+                <option value="30d">最近 30 天[cite: 1]</option>
+                <option value="90d">最近 90 天[cite: 1]</option>
+                <option value="thisMonth">本月[cite: 1]</option>
+                <option value="lastMonth">上個月[cite: 1]</option>
+                <option value="thisYear">今年[cite: 1]</option>
+                <option value="custom">自訂日期範圍...[cite: 1]</option>
               </select>
             </div>
             <div>
               <label
                 class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
-                >條件篩選</label
+                >條件篩選[cite: 1]</label
               >
               <select
                 id="filterCondition"
@@ -311,11 +342,11 @@
                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
               >
                 <option value="all">所有狀態</option>
-                <option value="q_好">睡眠品質 = 好</option>
+                <option value="q_好">睡眠品質 = 好[cite: 1]</option>
                 <option value="q_普通">睡眠品質 = 普通</option>
-                <option value="q_差">睡眠品質 = 差</option>
+                <option value="q_差">睡眠品質 = 差[cite: 1]</option>
                 <option value="q_很差">睡眠品質 = 很差</option>
-                <option value="m_le4">晨起分數 ≤ 4 (低分注意)</option>
+                <option value="m_le4">晨起分數 ≤ 4 (低分注意)[cite: 1]</option>
                 <option value="m_ge8">晨起分數 ≥ 8 (狀態良好)</option>
                 <option value="b_le4">睡前分數 ≤ 4</option>
                 <option value="b_ge8">睡前分數 ≥ 8</option>
@@ -324,21 +355,25 @@
             <div>
               <label
                 class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
-                >排序方式</label
+                >排序方式[cite: 1]</label
               >
               <select
                 id="filterSort"
                 onchange="App.applyFilters()"
                 class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
               >
-                <option value="date_desc">日期：新 → 舊</option>
-                <option value="date_asc">日期：舊 → 新</option>
-                <option value="morning_desc">晨起分數：高 → 低</option>
-                <option value="morning_asc">晨起分數：低 → 高</option>
-                <option value="bed_desc">睡前分數：高 → 低</option>
-                <option value="bed_asc">睡前分數：低 → 高</option>
-                <option value="quality_desc">睡眠品質：好 → 很差</option>
-                <option value="quality_asc">睡眠品質：很差 → 好</option>
+                <option value="date_desc">日期：新 → 舊[cite: 1]</option>
+                <option value="date_asc">日期：舊 → 新[cite: 1]</option>
+                <option value="morning_desc">晨起分數：高 → 低[cite: 1]</option>
+                <option value="morning_asc">晨起分數：低 → 高[cite: 1]</option>
+                <option value="bed_desc">睡前分數：高 → 低[cite: 1]</option>
+                <option value="bed_asc">睡前分數：低 → 高[cite: 1]</option>
+                <option value="quality_desc">
+                  睡眠品質：好 → 很差[cite: 1]
+                </option>
+                <option value="quality_asc">
+                  睡眠品質：很差 → 好[cite: 1]
+                </option>
               </select>
             </div>
           </div>
@@ -374,14 +409,14 @@
                   onclick="App.toggleColumnSelector()"
                   class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
-                  👁️ 顯示／隱藏欄位與欄寬
+                  👁️ 顯示／隱藏欄位與欄寬[cite: 1]
                 </button>
                 <div
                   id="columnSelectorPopup"
                   class="hidden absolute left-0 mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-3 z-30 space-y-2"
                 >
                   <div class="text-xs font-bold text-slate-500 border-b pb-1">
-                    勾選要在表格顯示的欄位
+                    勾選要在表格顯示的欄位[cite: 1]
                   </div>
                   <div
                     id="columnCheckboxes"
@@ -389,7 +424,7 @@
                   ></div>
                   <div class="border-t pt-2">
                     <label class="block text-xs text-slate-500 mb-1"
-                      >備註欄寬度</label
+                      >備註欄寬度[cite: 1]</label
                     >
                     <select
                       id="noteColWidthSelect"
@@ -417,7 +452,7 @@
                 id="btnViewModeToggle"
                 class="md:hidden px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
               >
-                切換卡片/表格
+                切換卡片/表格[cite: 1]
               </button>
             </div>
           </div>
@@ -458,7 +493,8 @@
               </select>
               <span class="text-slate-400 hidden sm:inline"
                 >💡
-                提示：點擊表格內的「晨起、睡前、睡眠品質」可直接快速修改</span
+                提示：點擊表格內的「晨起、睡前、睡眠品質」可直接快速修改[cite:
+                1]</span
               >
             </div>
             <div class="flex items-center gap-2">
@@ -491,9 +527,9 @@
           class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
         >
           <div>
-            <h2 class="text-lg font-bold">統計分析與長期趨勢</h2>
+            <h2 class="text-lg font-bold">統計分析與長期趨勢[cite: 1]</h2>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              呈現個人紀錄中的統計分布現象，不作為醫療診斷依據
+              呈現個人紀錄中的統計分布現象，不作為醫療診斷依據[cite: 1]
             </p>
           </div>
           <div
@@ -504,28 +540,28 @@
               data-srange="7"
               class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
             >
-              7天
+              7天[cite: 1]
             </button>
             <button
               onclick="App.setStatsRange(30)"
               data-srange="30"
               class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
             >
-              30天
+              30天[cite: 1]
             </button>
             <button
               onclick="App.setStatsRange(90)"
               data-srange="90"
               class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
             >
-              90天
+              90天[cite: 1]
             </button>
             <button
               onclick="App.setStatsRange(0)"
               data-srange="0"
               class="stats-range-btn px-3 py-1.5 text-xs font-medium rounded-md"
             >
-              全部
+              全部[cite: 1]
             </button>
           </div>
         </div>
@@ -553,7 +589,9 @@
           <div
             class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
           >
-            <h3 class="text-sm font-bold mb-2">🌅 晨起分數趨勢 (1~10)</h3>
+            <h3 class="text-sm font-bold mb-2">
+              🌅 晨起分數趨勢 (1~10)[cite: 1]
+            </h3>
             <div
               id="chartMorning"
               class="w-full h-52 flex items-center justify-center text-sm text-slate-400"
@@ -562,7 +600,9 @@
           <div
             class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
           >
-            <h3 class="text-sm font-bold mb-2">🌙 睡前分數趨勢 (1~10)</h3>
+            <h3 class="text-sm font-bold mb-2">
+              🌙 睡前分數趨勢 (1~10)[cite: 1]
+            </h3>
             <div
               id="chartBedtime"
               class="w-full h-52 flex items-center justify-center text-sm text-slate-400"
@@ -574,7 +614,9 @@
           class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700"
         >
           <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-bold">⚖️ 晨起 vs 睡前 雙線比較圖</h3>
+            <h3 class="text-sm font-bold">
+              ⚖️ 晨起 vs 睡前 雙線比較圖[cite: 1]
+            </h3>
             <div class="flex items-center gap-3 text-xs">
               <span class="flex items-center gap-1"
                 ><span class="w-3 h-1 bg-blue-500 inline-block"></span>
@@ -597,7 +639,7 @@
           <div
             class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
           >
-            <h3 class="text-sm font-bold">🛌 睡眠品質分布統計</h3>
+            <h3 class="text-sm font-bold">🛌 睡眠品質分布統計[cite: 1]</h3>
             <div
               id="sleepQualityDistribution"
               class="space-y-2.5 text-sm"
@@ -606,7 +648,9 @@
           <div
             class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
           >
-            <h3 class="text-sm font-bold">🔍 睡眠品質與晨起分數關聯現象</h3>
+            <h3 class="text-sm font-bold">
+              🔍 睡眠品質與晨起分數關聯現象[cite: 1]
+            </h3>
             <div id="qualityMorningCorrelation" class="space-y-2 text-sm"></div>
           </div>
         </div>
@@ -617,14 +661,16 @@
             class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
           >
             <h3 class="text-sm font-bold">
-              📈 自訂數值欄位統計（平均／最高／最低）
+              📈 自訂數值欄位統計（平均／最高／最低）[cite: 1]
             </h3>
             <div id="customNumericStats" class="space-y-2.5 text-sm"></div>
           </div>
           <div
             class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
           >
-            <h3 class="text-sm font-bold">🔀 生活條件交叉分析（資料相關性）</h3>
+            <h3 class="text-sm font-bold">
+              🔀 生活條件交叉分析（資料相關性）[cite: 1]
+            </h3>
             <div id="conditionalCrossStats" class="space-y-2.5 text-sm"></div>
           </div>
         </div>
@@ -659,7 +705,7 @@
             </button>
           </div>
           <div class="flex items-center gap-2 text-xs">
-            <span>視覺標示依據：</span>
+            <span>視覺標示依據：[cite: 1]</span>
             <select
               id="calendarColorMode"
               onchange="App.renderCalendar()"
@@ -697,9 +743,10 @@
           class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3"
         >
           <div>
-            <h2 class="text-lg font-bold">自訂欄位系統與排序管理</h2>
+            <h2 class="text-lg font-bold">自訂欄位系統與排序管理[cite: 1]</h2>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              可自由新增生活與身體指標（體重、運動、咖啡、血壓等），並調整表格顯示順序
+              可自由新增生活與身體指標（體重、運動、咖啡、血壓等），並調整表格顯示順序[cite:
+              1]
             </p>
           </div>
           <button
@@ -794,10 +841,11 @@
             class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
           >
             <h3 class="text-sm font-bold">
-              表格欄位整體順序（可拖曳或點擊上下移動）
+              表格欄位整體順序（可拖曳或點擊上下移動）[cite: 1]
             </h3>
             <p class="text-xs text-slate-500">
-              調整每日紀錄表格與匯出 CSV 的欄位排列順序，設定將永久保存。
+              調整每日紀錄表格與匯出 CSV 的欄位排列順序，設定將永久保存[cite:
+              1]。
             </p>
             <ul id="fieldOrderList" class="space-y-1.5 text-sm"></ul>
           </div>
@@ -810,10 +858,10 @@
           class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4"
         >
           <div>
-            <h2 class="text-lg font-bold">資料備份、匯出與管理</h2>
+            <h2 class="text-lg font-bold">資料備份、匯出與管理[cite: 1]</h2>
             <p class="text-xs text-slate-500 dark:text-slate-400">
               所有資料預設保存在你的瀏覽器 IndexedDB
-              資料庫中，不會上傳至任何外部伺服器。
+              資料庫中，不會上傳至任何外部伺服器[cite: 1]。
             </p>
           </div>
           <div
@@ -825,29 +873,29 @@
             <div
               class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
             >
-              <h3 class="text-sm font-bold">📤 資料匯出與完整備份</h3>
+              <h3 class="text-sm font-bold">📤 資料匯出與完整備份[cite: 1]</h3>
               <p class="text-xs text-slate-500">
                 CSV 檔案已包含 UTF-8 BOM 標記，可直接使用 Excel 或 Google Sheets
-                正常開啟中文。
+                正常開啟中文[cite: 1]。
               </p>
               <div class="flex flex-wrap gap-2">
                 <button
                   onclick="App.exportCSV()"
                   class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium"
                 >
-                  📊 匯出 CSV (Excel)
+                  📊 匯出 CSV (Excel)[cite: 1]
                 </button>
                 <button
                   onclick="App.exportRecordsJSON()"
                   class="px-3.5 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium"
                 >
-                  📄 匯出紀錄 JSON
+                  📄 匯出紀錄 JSON[cite: 1]
                 </button>
                 <button
                   onclick="App.exportFullBackup()"
                   class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
                 >
-                  📦 完整系統備份 (.json)
+                  📦 完整系統備份 (.json)[cite: 1]
                 </button>
               </div>
             </div>
@@ -855,10 +903,10 @@
             <div
               class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
             >
-              <h3 class="text-sm font-bold">📥 匯入備份與還原</h3>
+              <h3 class="text-sm font-bold">📥 匯入備份與還原[cite: 1]</h3>
               <p class="text-xs text-slate-500">
                 選擇先前匯出的 JSON
-                備份檔，系統會先驗證格式並讓你選擇「合併」或「覆蓋」。
+                備份檔，系統會先驗證格式並讓你選擇「合併」或「覆蓋」[cite: 1]。
               </p>
               <div>
                 <input
@@ -878,24 +926,25 @@
               class="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-900/10 space-y-2"
             >
               <h3 class="text-sm font-bold text-amber-800 dark:text-amber-300">
-                🧪 體驗與測試用 Demo 資料
+                🧪 體驗與測試用 Demo 資料[cite: 1]
               </h3>
               <p class="text-xs text-slate-600 dark:text-slate-400">
                 可產生最近 30 天的模擬紀錄來測試圖表與統計，Demo
-                資料帶有獨立標記，隨時可一鍵清除，不會與你正式輸入的紀錄混淆。
+                資料帶有獨立標記，隨時可一鍵清除，不會與你正式輸入的紀錄混淆[cite:
+                1]。
               </p>
               <div class="flex flex-wrap gap-2 pt-1">
                 <button
                   onclick="App.generateDemoData()"
                   class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-medium"
                 >
-                  載入 30 天 Demo 資料
+                  載入 30 天 Demo 資料[cite: 1]
                 </button>
                 <button
                   onclick="App.clearDemoData()"
                   class="px-3 py-1.5 border border-amber-600 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-medium"
                 >
-                  清除所有 Demo 資料
+                  清除所有 Demo 資料[cite: 1]
                 </button>
               </div>
             </div>
@@ -904,17 +953,18 @@
               class="p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-900/10 space-y-2"
             >
               <h3 class="text-sm font-bold text-rose-700 dark:text-rose-300">
-                ⚠️ 高風險操作：刪除全部資料
+                ⚠️ 高風險操作：刪除全部資料[cite: 1]
               </h3>
               <p class="text-xs text-slate-600 dark:text-slate-400">
-                清空本機瀏覽器內的所有每日紀錄與自訂設定。執行前系統會進行二次確認並提供備份選項。
+                清空本機瀏覽器內的所有每日紀錄與自訂設定。執行前系統會進行二次確認並提供備份選項[cite:
+                1]。
               </p>
               <div class="pt-1">
                 <button
                   onclick="App.openDeleteAllModal()"
                   class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium"
                 >
-                  🗑 刪除全部資料
+                  🗑 刪除全部資料[cite: 1]
                 </button>
               </div>
             </div>
@@ -930,15 +980,15 @@
           <h2
             class="text-lg font-bold border-b border-slate-200 dark:border-slate-700 pb-2"
           >
-            系統偏好設定
+            系統偏好設定[cite: 1]
           </h2>
 
           <div class="space-y-4 text-sm">
             <div class="flex items-center justify-between">
               <div>
-                <div class="font-medium">日期顯示格式</div>
+                <div class="font-medium">日期顯示格式[cite: 1]</div>
                 <div class="text-xs text-slate-500">
-                  影響表格、首頁與匯出顯示格式
+                  影響表格、首頁與匯出顯示格式[cite: 1]
                 </div>
               </div>
               <select
@@ -946,16 +996,16 @@
                 onchange="App.saveUserSettings()"
                 class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
               >
-                <option value="YYYY/MM/DD">YYYY/MM/DD (預設)</option>
-                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                <option value="YYYY/MM/DD">YYYY/MM/DD (預設)[cite: 1]</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD[cite: 1]</option>
               </select>
             </div>
 
             <div class="flex items-center justify-between">
               <div>
-                <div class="font-medium">每週第一天</div>
+                <div class="font-medium">每週第一天[cite: 1]</div>
                 <div class="text-xs text-slate-500">
-                  影響日曆排列與本週統計計算起點
+                  影響日曆排列與本週統計計算起點[cite: 1]
                 </div>
               </div>
               <select
@@ -963,16 +1013,16 @@
                 onchange="App.saveUserSettings()"
                 class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
               >
-                <option value="1">星期一 (預設)</option>
-                <option value="0">星期日</option>
+                <option value="1">星期一 (預設)[cite: 1]</option>
+                <option value="0">星期日[cite: 1]</option>
               </select>
             </div>
 
             <div class="flex items-center justify-between">
               <div>
-                <div class="font-medium">外觀主題</div>
+                <div class="font-medium">外觀主題[cite: 1]</div>
                 <div class="text-xs text-slate-500">
-                  選擇淺色、深色或自動跟隨系統
+                  選擇淺色、深色或自動跟隨系統[cite: 1]
                 </div>
               </div>
               <select
@@ -980,9 +1030,9 @@
                 onchange="App.saveUserSettings()"
                 class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
               >
-                <option value="system">跟隨系統 (預設)</option>
-                <option value="light">淺色模式</option>
-                <option value="dark">深色模式</option>
+                <option value="system">跟隨系統 (預設)[cite: 1]</option>
+                <option value="light">淺色模式[cite: 1]</option>
+                <option value="dark">深色模式[cite: 1]</option>
               </select>
             </div>
           </div>
@@ -1003,16 +1053,9 @@
         <div
           class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between"
         >
-          <div class="flex items-center gap-2">
-            <h3 id="recordModalTitle" class="font-bold text-base">
-              新增今日紀錄
-            </h3>
-            <span
-              id="quickModeBadge"
-              class="hidden px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-800 font-medium"
-              >⚡ 快速模式</span
-            >
-          </div>
+          <h3 id="recordModalTitle" class="font-bold text-base">
+            新增今日紀錄
+          </h3>
           <button
             onclick="App.closeRecordModal()"
             class="text-slate-400 hover:text-slate-600 text-sm px-2 py-1"
@@ -1032,7 +1075,7 @@
             <div class="col-span-2">
               <label
                 class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1"
-                >日期 *</label
+                >日期 *[cite: 1]</label
               >
               <input
                 type="date"
@@ -1045,7 +1088,7 @@
             <div>
               <label
                 class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1"
-                >星期 (自動)</label
+                >星期 (自動)[cite: 1]</label
               >
               <input
                 type="text"
@@ -1065,7 +1108,7 @@
             <div class="flex justify-between items-center mb-1.5">
               <label
                 class="text-xs font-bold text-slate-600 dark:text-slate-300"
-                >🌅 晨起狀態評分 (1=非常差，10=非常好) *</label
+                >🌅 晨起狀態評分 (1=非常差，10=非常好) *[cite: 1]</label
               >
               <span
                 id="labelMorningScore"
@@ -1084,7 +1127,7 @@
             <div class="flex justify-between items-center mb-1.5">
               <label
                 class="text-xs font-bold text-slate-600 dark:text-slate-300"
-                >🌙 睡前狀態評分 (1=非常差，10=非常好) *</label
+                >🌙 睡前狀態評分 (1=非常差，10=非常好) *[cite: 1]</label
               >
               <span
                 id="labelBedtimeScore"
@@ -1102,7 +1145,7 @@
           <div>
             <label
               class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5"
-              >🛌 睡眠品質 *</label
+              >🛌 睡眠品質 *[cite: 1]</label
             >
             <div id="sleepQualityBtns" class="grid grid-cols-4 gap-2"></div>
           </div>
@@ -1111,7 +1154,8 @@
           <div>
             <label
               class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1"
-              >📝 備註（身體狀況、心情、運動、飲食、咖啡、壓力等）</label
+              >📝 備註（身體狀況、心情、運動、飲食、咖啡、壓力等）[cite:
+              1]</label
             >
             <textarea
               id="formNote"
@@ -1130,14 +1174,6 @@
               <span class="text-xs font-bold text-slate-500"
                 >自訂生活與身體指標</span
               >
-              <button
-                type="button"
-                id="btnToggleCustomInForm"
-                onclick="App.toggleCustomFieldsInForm()"
-                class="text-xs text-blue-600 hover:underline"
-              >
-                切換顯示
-              </button>
             </div>
             <div
               id="formCustomFieldsContainer"
@@ -1154,7 +1190,7 @@
               onclick="App.deleteFromModal()"
               class="hidden px-3.5 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20"
             >
-              🗑 刪除此筆紀錄
+              🗑 刪除此筆紀錄[cite: 1]
             </button>
             <div class="flex items-center gap-2 ml-auto">
               <button
@@ -1204,7 +1240,9 @@
         >
           <input type="hidden" id="cfId" />
           <div>
-            <label class="block text-xs font-bold mb-1">欄位名稱 *</label>
+            <label class="block text-xs font-bold mb-1"
+              >欄位名稱 *[cite: 1]</label
+            >
             <input
               type="text"
               id="cfName"
@@ -1214,7 +1252,9 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-bold mb-1">欄位類型 *</label>
+            <label class="block text-xs font-bold mb-1"
+              >欄位類型 *[cite: 1]</label
+            >
             <select
               id="cfType"
               onchange="App.onCfTypeChange()"
@@ -1235,7 +1275,9 @@
             </select>
           </div>
           <div id="cfUnitBox" class="hidden">
-            <label class="block text-xs font-bold mb-1">單位名稱 *</label>
+            <label class="block text-xs font-bold mb-1"
+              >單位名稱 *[cite: 1]</label
+            >
             <input
               type="text"
               id="cfUnit"
@@ -1245,7 +1287,7 @@
           </div>
           <div id="cfOptionsBox" class="hidden">
             <label class="block text-xs font-bold mb-1"
-              >選項清單（請用逗號或換行分隔）*</label
+              >選項清單（請用逗號或換行分隔）*[cite: 1]</label
             >
             <textarea
               id="cfOptions"
@@ -1261,7 +1303,7 @@
             </label>
             <label class="flex items-center gap-1.5 cursor-pointer">
               <input type="checkbox" id="cfVisible" checked class="rounded" />
-              <span>顯示在首頁表格</span>
+              <span>顯示在首頁表格[cite: 1]</span>
             </label>
           </div>
           <div
@@ -1297,20 +1339,21 @@
           刪除自訂欄位確認
         </h3>
         <p class="text-sm text-slate-600 dark:text-slate-300">
-          刪除欄位不代表一定要刪除歷史資料。請選擇是否保留過往已記錄的歷史資料：
+          刪除欄位不代表一定要刪除歷史資料。請選擇是否保留過往已記錄的歷史資料[cite:
+          1]：
         </p>
         <div class="space-y-2 pt-2">
           <button
             onclick="App.confirmDeleteField(true)"
             class="w-full py-2.5 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium"
           >
-            🗂 刪除欄位但保留歷史資料（推薦）
+            🗂 刪除欄位但保留歷史資料（推薦）[cite: 1]
           </button>
           <button
             onclick="App.confirmDeleteField(false)"
             class="w-full py-2.5 px-4 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium"
           >
-            🧨 刪除欄位及所有相關資料
+            🧨 刪除欄位及所有相關資料[cite: 1]
           </button>
           <button
             onclick="App.closeDeleteFieldModal()"
@@ -1336,20 +1379,21 @@
           class="text-sm text-slate-600 dark:text-slate-300 font-medium"
         ></p>
         <p class="text-xs text-slate-500">
-          請選擇還原方式：「合併」會保留目前資料並加入備份資料（相同日期以備份更新）；「覆蓋」會清空現有資料並完全取代。
+          請選擇還原方式：「合併」會保留目前資料並加入備份資料（相同日期以備份更新）；「覆蓋」會清空現有資料並完全取代[cite:
+          1]。
         </p>
         <div class="flex flex-col gap-2 pt-2">
           <button
             onclick="App.executeImport('merge')"
             class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
           >
-            🔄 合併資料（保留現有＋匯入）
+            🔄 合併資料（保留現有＋匯入）[cite: 1]
           </button>
           <button
             onclick="App.executeImport('overwrite')"
             class="w-full py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium"
           >
-            ⚠️ 覆蓋資料（完全取代目前資料）
+            ⚠️ 覆蓋資料（完全取代目前資料）[cite: 1]
           </button>
           <button
             onclick="App.closeImportModal()"
@@ -1370,24 +1414,24 @@
         class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4"
       >
         <h3 class="font-bold text-base text-rose-600">
-          ⚠️ 確定要刪除全部資料嗎？
+          ⚠️ 確定要刪除全部資料嗎？[cite: 1]
         </h3>
         <p id="deleteAllCountText" class="text-sm font-semibold"></p>
         <p class="text-xs text-slate-500">
-          刪除後無法復原。強烈建議在刪除前先進行完整備份。
+          刪除後無法復原。強烈建議在刪除前先進行完整備份[cite: 1]。
         </p>
         <div class="flex flex-col gap-2 pt-2">
           <button
             onclick="App.backupThenDeleteAll()"
             class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
           >
-            📦 備份後刪除
+            📦 備份後刪除[cite: 1]
           </button>
           <button
             onclick="App.executeDeleteAll()"
             class="w-full py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium"
           >
-            🧨 直接刪除全部資料
+            🧨 直接刪除全部資料[cite: 1]
           </button>
           <button
             onclick="App.closeDeleteAllModal()"
@@ -1416,7 +1460,7 @@
         <div
           class="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700/60 p-3 rounded-xl"
         >
-          🔒 所有資料皆安全儲存於你的本機瀏覽器中，不會外傳。
+          🔒 所有資料皆安全儲存於你的本機瀏覽器中，不會外傳[cite: 1]。
         </div>
         <div class="pt-2 flex flex-col gap-2">
           <button
@@ -1554,7 +1598,6 @@
         formMorningScore: 7,
         formBedtimeScore: 7,
         formSleepQuality: "普通",
-        isQuickMode: false,
         lastDeletedRecord: null,
         undoTimer: null,
         pendingDeleteFieldId: null,
@@ -1767,7 +1810,6 @@
           const today = this.getTodayISO();
           const [ty, tm, td] = today.split("-").map(Number);
 
-          // 目前連續天數（若今天尚未紀錄，從昨天起算）
           let curr = 0;
           let checkDate = new Date(ty, tm - 1, td);
           if (!dateSet.has(this.dateToISO(checkDate))) {
@@ -1778,7 +1820,6 @@
             checkDate.setDate(checkDate.getDate() - 1);
           }
 
-          // 最長連續天數
           const sortedAsc = [...dateSet].sort();
           let longest = 0,
             temp = 0,
@@ -1838,7 +1879,7 @@
             badge.className =
               "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200";
             summary.textContent =
-              "點擊右側「＋新增今日紀錄」或「⚡ 30秒快速紀錄」即可完成今日狀態登錄。";
+              "點擊右側「＋新增今日紀錄」即可完成今日狀態登錄。";
             btnPrimary.textContent = "＋新增今日紀錄";
           }
 
@@ -1858,7 +1899,6 @@
             .getElementById("sidebarDemoBadge")
             .classList.toggle("hidden", !hasDemo);
 
-          // 本週平均
           const weekRecs = this.getRecordsInLastNDays(7);
           document.getElementById("quickStatWeekMorning").textContent =
             weekRecs.length
@@ -1906,7 +1946,7 @@
             .pop();
           if (hitMilestone) {
             alerts.push(
-              `📦 備份提醒：目前已累積 ${count} 筆正式紀錄，建議前往「資料管理」進行一次完整資料備份。 <button onclick="App.ackBackupMilestone(${hitMilestone})" class="underline ml-2 text-xs">我知道了</button>`,
+              `📦 備份提醒：目前已累積 ${count} 筆正式紀錄，建議前往「資料管理」進行一次完整資料備份[cite: 1]。 <button onclick="App.ackBackupMilestone(${hitMilestone})" class="underline ml-2 text-xs">我知道了</button>`,
             );
           }
 
@@ -1959,7 +1999,6 @@
 
           let list = [...this.records];
 
-          // 日期範圍篩選
           if (range !== "all") {
             const [ty, tm, td] = today.split("-").map(Number);
             if (range === "today") {
@@ -1985,7 +2024,6 @@
             }
           }
 
-          // 條件篩選
           if (cond !== "all") {
             if (cond.startsWith("q_")) {
               const q = cond.slice(2);
@@ -2000,7 +2038,6 @@
               list = list.filter((r) => r.bedtimeScore >= 8);
           }
 
-          // 關鍵字搜尋（備註 + 自訂欄位內容）
           if (kw) {
             list = list.filter((r) => {
               if ((r.note || "").toLowerCase().includes(kw)) return true;
@@ -2018,7 +2055,6 @@
             });
           }
 
-          // 排序
           list.sort((a, b) => {
             if (sort === "date_desc") return b.date.localeCompare(a.date);
             if (sort === "date_asc") return a.date.localeCompare(b.date);
@@ -2143,7 +2179,7 @@
                 return `<tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors">
               ${activeCols.map((k) => this.renderTableCell(rec, k)).join("")}
               <td class="px-3 py-2 text-right whitespace-nowrap space-x-1">
-                <button onclick="App.openRecordModal('${rec.id}', false)" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">✏️ 編輯</button>
+                <button onclick="App.openRecordModal('${rec.id}')" class="px-2 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">✏️ 編輯</button>
                 <button onclick="App.deleteRecord('${rec.id}')" class="px-2 py-1 text-xs rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30">🗑 刪除</button>
               </td>
             </tr>`;
@@ -2151,7 +2187,6 @@
               .join("");
           }
 
-          // 手機版卡片渲染
           const cardWrapper = document.getElementById("cardViewWrapper");
           cardWrapper.innerHTML = pageItems
             .map(
@@ -2167,7 +2202,7 @@
             </div>
             ${rec.note ? `<div class="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700/40 p-2 rounded">${this.escapeHTML(rec.note)}</div>` : ""}
             <div class="flex justify-end gap-2 pt-1">
-              <button onclick="App.openRecordModal('${rec.id}', false)" class="px-3 py-1 text-xs rounded bg-slate-100 dark:bg-slate-700">✏️ 編輯</button>
+              <button onclick="App.openRecordModal('${rec.id}')" class="px-3 py-1 text-xs rounded bg-slate-100 dark:bg-slate-700">✏️ 編輯</button>
               <button onclick="App.deleteRecord('${rec.id}')" class="px-3 py-1 text-xs rounded text-rose-600 border border-rose-200">🗑 刪除</button>
             </div>
           </div>
@@ -2197,7 +2232,6 @@
             return `<td class="px-3 py-2.5 text-slate-600 dark:text-slate-300 break-words" style="min-width:${w};max-width:${w}">${this.escapeHTML(rec.note || "")}</td>`;
           }
 
-          // 自訂欄位
           const cf = this.customFields.find((f) => f.id === colKey);
           const val = rec.customValues ? rec.customValues[colKey] : undefined;
           if (val === undefined || val === null || val === "") {
@@ -2341,22 +2375,18 @@
           this.renderRecordsTableAndCards();
         },
 
-        /* ================= 新增／編輯紀錄表單與快速紀錄模式 ================= */
-        openTodayForm(quickMode = false) {
+        /* ================= 新增／編輯紀錄表單（永遠顯示自訂欄位） ================= */
+        openTodayForm() {
           const today = this.getTodayISO();
           const existing = this.records.find((r) => r.date === today);
           if (existing) {
-            this.openRecordModal(existing.id, quickMode);
+            this.openRecordModal(existing.id);
           } else {
-            this.openRecordModal(null, quickMode, today);
+            this.openRecordModal(null, today);
           }
         },
 
-        openRecordModal(recordId = null, quickMode = false, presetDate = null) {
-          this.isQuickMode = quickMode;
-          document
-            .getElementById("quickModeBadge")
-            .classList.toggle("hidden", !quickMode);
+        openRecordModal(recordId = null, presetDate = null) {
           const rec = recordId
             ? this.records.find((r) => r.id === recordId)
             : null;
@@ -2411,12 +2441,13 @@
           this.renderCustomFieldsInForm(rec ? rec.customValues : {});
           this.checkDuplicateDateOnForm();
 
+          // 永遠展開自訂欄位
           const customWrapper = document.getElementById(
             "formCustomFieldsContainer",
           );
           customWrapper.classList.toggle(
             "hidden",
-            quickMode || this.customFields.length === 0,
+            this.customFields.length === 0,
           );
           document
             .getElementById("formCustomFieldsWrapper")
@@ -2427,12 +2458,6 @@
 
         closeRecordModal() {
           document.getElementById("recordModal").classList.add("hidden");
-        },
-
-        toggleCustomFieldsInForm() {
-          document
-            .getElementById("formCustomFieldsContainer")
-            .classList.toggle("hidden");
         },
 
         onFormDateChange() {
@@ -2448,7 +2473,7 @@
           const notice = document.getElementById("duplicateDateNotice");
           if (dup) {
             notice.classList.remove("hidden");
-            notice.innerHTML = `⚠️ 提醒：<strong>${this.formatDateDisplay(d)}</strong> 已經有一筆紀錄。若直接儲存將會更新該日的紀錄，或點此 <button type="button" onclick="App.openRecordModal('${dup.id}', App.isQuickMode)" class="underline font-bold">直接載入該日現有紀錄編輯</button>。`;
+            notice.innerHTML = `⚠️ 提醒：<strong>${this.formatDateDisplay(d)}</strong> 已經有一筆紀錄。若直接儲存將會更新該日的紀錄，或點此 <button type="button" onclick="App.openRecordModal('${dup.id}')" class="underline font-bold">直接載入該日現有紀錄編輯</button>。`;
           } else {
             notice.classList.add("hidden");
           }
@@ -2513,8 +2538,7 @@
             .map((cf) => {
               const val =
                 values && values[cf.id] !== undefined ? values[cf.id] : "";
-              const reqAttr =
-                !this.isQuickMode && cf.required ? "required" : "";
+              const reqAttr = cf.required ? "required" : "";
               const label = `${this.escapeHTML(cf.name)}${cf.unit ? ` (${this.escapeHTML(cf.unit)})` : ""}${cf.required ? " *" : ""}`;
               let inputHTML = "";
 
@@ -2905,7 +2929,6 @@
               .join("");
           }
 
-          // 欄位排序列表
           const orderUl = document.getElementById("fieldOrderList");
           orderUl.innerHTML = this.fieldOrder
             .map(
@@ -2975,7 +2998,7 @@
           document.getElementById("calendarTitle").textContent =
             `${y} 年 ${m + 1} 月`;
 
-          const weekStart = Number(this.userSettings.weekStart); // 1=週一, 0=週日
+          const weekStart = Number(this.userSettings.weekStart);
           const headers =
             weekStart === 1
               ? ["一", "二", "三", "四", "五", "六", "日"]
@@ -3069,7 +3092,7 @@
               <div class="text-base font-bold">${this.formatDateDisplay(iso)}（${this.getWeekdayChar(iso)}）</div>
               <div class="py-8 text-center text-slate-400 text-sm">這一天尚未紀錄</div>
             </div>
-            <button onclick="App.openRecordModal(null, false, '${iso}')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium">＋ 新增紀錄</button>
+            <button onclick="App.openRecordModal(null, '${iso}')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium">＋ 新增紀錄</button>
           `;
             return;
           }
@@ -3108,13 +3131,13 @@
             ${customList ? `<div class="space-y-1 pt-1">${customList}</div>` : ""}
           </div>
           <div class="flex gap-2 pt-4">
-            <button onclick="App.openRecordModal('${rec.id}', false)" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium">✏️ 編輯紀錄</button>
+            <button onclick="App.openRecordModal('${rec.id}')" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium">✏️ 編輯紀錄</button>
             <button onclick="App.deleteRecord('${rec.id}')" class="px-3 py-2 border border-rose-300 text-rose-600 rounded-lg text-xs font-medium">🗑 刪除</button>
           </div>
         `;
         },
 
-        /* ================= 統計 Dashboard、週報、月報、SVG 折線圖与交叉分析 ================= */
+        /* ================= 統計分析、報表、圖表 ================= */
         getRecordsInLastNDays(days) {
           if (!days || days <= 0) return [...this.records];
           const today = this.getTodayISO();
@@ -3202,7 +3225,6 @@
           const today = this.getTodayISO();
           const [ty, tm, td] = today.split("-").map(Number);
 
-          // 本週 (過去 7 天) 與 上週 (前 8~14 天)
           const thisWeekStart = this.dateToISO(new Date(ty, tm - 1, td - 6));
           const lastWeekStart = this.dateToISO(new Date(ty, tm - 1, td - 13));
           const lastWeekEnd = this.dateToISO(new Date(ty, tm - 1, td - 7));
@@ -3233,7 +3255,7 @@
 
           document.getElementById("weeklyReportBox").innerHTML = `
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
-            <h3 class="text-sm font-bold">📅 本週摘要（最近 7 天）</h3>
+            <h3 class="text-sm font-bold">📅 本週摘要（最近 7 天）[cite: 1]</h3>
             <span class="text-xs font-semibold">紀錄：${wRecs.length} / 7 天</span>
           </div>
           <div class="grid grid-cols-2 gap-2 text-xs py-1">
@@ -3246,7 +3268,6 @@
           <div class="pt-1">${wDiffText}</div>
         `;
 
-          // 本月 與 上個月
           const thisMPrefix = today.slice(0, 7);
           const lastMPrefix = this.dateToISO(new Date(ty, tm - 2, 1)).slice(
             0,
@@ -3279,7 +3300,7 @@
 
           document.getElementById("monthlyReportBox").innerHTML = `
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
-            <h3 class="text-sm font-bold">🗓️ 本月摘要（${thisMPrefix.replace("-", "/")}）</h3>
+            <h3 class="text-sm font-bold">🗓️ 本月摘要（${thisMPrefix.replace("-", "/")}）[cite: 1]</h3>
             <span class="text-xs font-semibold">本月紀錄：${mRecs.length} 天</span>
           </div>
           <div class="grid grid-cols-2 gap-2 text-xs py-1">
@@ -3320,7 +3341,6 @@
             gridSVG += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" class="fill-slate-400 text-[10px]">${v}</text>`;
           });
 
-          // X 軸首尾與中間日期
           const idxs = [0, Math.floor((n - 1) / 2), n - 1];
           idxs.forEach((idx) => {
             const x = xAt(idx);
@@ -3401,14 +3421,13 @@
           const numBox = document.getElementById("customNumericStats");
           const condBox = document.getElementById("conditionalCrossStats");
 
-          // 數值型自訂欄位統計
           const numFields = this.customFields.filter((f) =>
             ["integer", "decimal", "unit", "score10", "slider"].includes(
               f.type,
             ),
           );
           if (numFields.length === 0 || recs.length === 0) {
-            numBox.innerHTML = `<div class="text-xs text-slate-400">新增數值型自訂欄位（如：體重、步數、疲勞程度）並累積紀錄後，將自動顯示平均、最高與最低統計。</div>`;
+            numBox.innerHTML = `<div class="text-xs text-slate-400">新增數值型自訂欄位（如：體重、步數、疲勞程度）並累積紀錄後，將自動顯示平均、最高與最低統計[cite: 1]。</div>`;
           } else {
             numBox.innerHTML = numFields
               .map((cf) => {
@@ -3436,7 +3455,6 @@
               .join("");
           }
 
-          // 條件交叉分析（是/否 或 單選自訂欄位，以及備註關鍵字如「運動」「咖啡」）
           const insights = [];
           const boolFields = this.customFields.filter(
             (f) => f.type === "boolean",
@@ -3469,7 +3487,6 @@
             }
           });
 
-          // 自動從備註與欄位分析「運動」
           const exRecs = recs.filter((r) => (r.note || "").includes("運動"));
           const noExRecs = recs.filter((r) => !(r.note || "").includes("運動"));
           if (exRecs.length >= 2 && noExRecs.length >= 2) {
@@ -3479,7 +3496,7 @@
           }
 
           if (insights.length === 0) {
-            condBox.innerHTML = `<div class="text-xs text-slate-400">當你新增「是／否」類型欄位（如：是否運動、咖啡）或備註累積足夠紀錄後，系統會在此呈現客觀資料交叉比較。</div>`;
+            condBox.innerHTML = `<div class="text-xs text-slate-400">當你新增「是／否」類型欄位（如：是否運動、咖啡）或備註累積足夠紀錄後，系統會在此呈現客觀資料交叉比較[cite: 1]。</div>`;
           } else {
             condBox.innerHTML = insights
               .map(
@@ -3490,7 +3507,7 @@
           }
         },
 
-        /* ================= 資料管理、CSV/JSON 匯出、完整備份與還原 ================= */
+        /* ================= 資料管理、匯出與備份 ================= */
         renderDataManagementPage() {
           const sortedAsc = [...this.records].sort((a, b) =>
             a.date.localeCompare(b.date),
@@ -3633,7 +3650,6 @@
                 throw new Error("格式不符");
               }
 
-              // 檢查基本欄位有效性
               const validRecords = records.filter(
                 (r) =>
                   r &&
@@ -3694,7 +3710,6 @@
                   ...data.userSettings,
                 };
             } else {
-              // 合併模式
               for (const cf of data.customFields)
                 await DB.put("customFields", cf);
               const existingByDate = {};
@@ -3762,7 +3777,6 @@
         },
 
         async generateDemoData() {
-          // 先建立 2 個常用示範欄位（若尚未存在）
           let exField = this.customFields.find((f) => f.name === "是否運動");
           if (!exField) {
             exField = {
@@ -3814,7 +3828,7 @@
               today.getDate() - i,
             );
             const iso = this.dateToISO(dt);
-            if (this.records.some((r) => r.date === iso)) continue; // 不覆蓋使用者已建立的真實紀錄
+            if (this.records.some((r) => r.date === iso)) continue;
 
             const hasEx = i % 2 === 0;
             const mScore = hasEx
